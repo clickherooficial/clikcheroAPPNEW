@@ -70,8 +70,12 @@ export function StepTone({ initial, disabled, onSubmit, onBack }: Props) {
       </div>
 
       <div>
-        <Label>CTAs e frases que VOCE quer usar nos anuncios</Label>
-        <p className="text-xs text-muted-foreground mb-2">Chamadas pra acao no estilo da sua marca — a IA vai reusar nos criativos</p>
+        <Label className="leading-snug">
+          Que frases você sempre quer usar no final dos anúncios. Como você pede a venda para seu cliente?
+        </Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          Adicione ate 10 trechos que funcionam como chamada final ou fechamento para o seu tipo de anuncio.
+        </p>
         <TagInput value={ctas} onChange={setCtas} placeholder='Ex: "Quero garantir meu lugar"' disabled={disabled} max={10} />
       </div>
 

@@ -48,7 +48,7 @@ export function BriefingView() {
         <CardHeader>
           <CardTitle>Briefing da empresa</CardTitle>
           <CardDescription>
-            Estes dados alimentam a IA do Fury. Edite a qualquer momento — todas as alteracoes ficam versionadas.
+            Edite a qualquer momento — todas as alteracoes ficam versionadas.
           </CardDescription>
         </CardHeader>
         <CardContent>

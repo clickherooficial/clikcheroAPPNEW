@@ -4,7 +4,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import type { ProposedRulePayload, ProposedRuleEnvelope, RuleType } from '@/types/fury-rules';
+import type { ProposedRulePayload, RuleType } from '@/types/fury-rules';
 
 interface AcceptArgs {
   messageId: string;
@@ -15,6 +15,8 @@ interface AcceptArgs {
 interface RejectArgs {
   messageId: string;
   ruleType: RuleType;
+  /** Evita SELECT pos-RPC (RLS/cache); vem do envelope no card */
+  confidence?: number | null;
 }
 
 async function setMessageProposalStatus(messageId: string, status: 'accepted' | 'rejected') {
@@ -34,7 +36,7 @@ export function useAcceptRuleProposal() {
     mutationFn: async ({ messageId, proposed, edited }: AcceptArgs) => {
       if (!companyId) throw new Error('Sem empresa associada');
 
-      const baseFields = {
+      const behaviorInsert = {
         company_id: companyId,
         created_by: user?.id ?? null,
         name: proposed.name,
@@ -52,21 +54,30 @@ export function useAcceptRuleProposal() {
       if (proposed.rule_type === 'behavior') {
         const { data, error } = await supabase
           .from('behavior_rules' as never)
-          .insert(baseFields as never)
+          .insert(behaviorInsert as never)
           .select('id')
           .single();
         if (error) throw error;
         ruleId = (data as { id: string }).id;
       } else if (proposed.rule_type === 'creative_pipeline') {
+        // creative_pipeline_rules NAO tem coluna scope — scope fica em applies_to
         const transformType = proposed.transform?.transform_type ?? 'custom';
         const { data, error } = await supabase
           .from('creative_pipeline_rules' as never)
           .insert({
-            ...baseFields,
+            company_id: companyId,
+            created_by: user?.id ?? null,
+            name: proposed.name,
+            description: proposed.description,
             transform_type: transformType,
             transform_params: proposed.transform?.params ?? {},
             applies_to: { media_types: ['image'], scope: proposed.scope },
             priority: 100,
+            proposal_status: 'accepted' as const,
+            confidence: proposed.confidence,
+            learned_from_message_id: messageId,
+            original_text: proposed.reasoning,
+            is_enabled: true,
           } as never)
           .select('id')
           .single();
@@ -103,8 +114,7 @@ export function useAcceptRuleProposal() {
       // UPDATE mensagem -> status accepted (via RPC SECURITY DEFINER)
       await setMessageProposalStatus(messageId, 'accepted');
 
-      // Telemetria
-      await supabase.from('rule_proposal_events' as never).insert({
+      const { error: evtErr } = await supabase.from('rule_proposal_events' as never).insert({
         company_id: companyId,
         user_id: user?.id ?? null,
         message_id: messageId,
@@ -113,6 +123,7 @@ export function useAcceptRuleProposal() {
         rule_id: ruleId,
         confidence: proposed.confidence,
       } as never);
+      if (evtErr) console.warn('[useAcceptRuleProposal] rule_proposal_events:', evtErr.message);
 
       return { ruleId };
     },
@@ -130,27 +141,23 @@ export function useRejectRuleProposal() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ messageId, ruleType }: RejectArgs & { proposed?: ProposedRulePayload }) => {
+    mutationFn: async ({ messageId, ruleType, confidence }: RejectArgs) => {
       if (!companyId) throw new Error('Sem empresa associada');
 
       await setMessageProposalStatus(messageId, 'rejected');
-      // Lemos confidence pra telemetria
-      const { data: msg } = await supabase
-        .from('chat_messages' as never)
-        .select('metadata')
-        .eq('id', messageId)
-        .maybeSingle();
-      const meta = (msg as { metadata?: { proposed_rule?: ProposedRuleEnvelope } } | null)?.metadata;
-      const existing = meta?.proposed_rule;
 
-      await supabase.from('rule_proposal_events' as never).insert({
+      const conf = confidence ?? null;
+      const { error: evtErr } = await supabase.from('rule_proposal_events' as never).insert({
         company_id: companyId,
         user_id: user?.id ?? null,
         message_id: messageId,
         rule_type: ruleType,
         action: 'rejected',
-        confidence: existing?.confidence ?? null,
+        confidence: conf,
       } as never);
+      if (evtErr) {
+        console.warn('[useRejectRuleProposal] rule_proposal_events (nao bloqueia descarte):', evtErr.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rule-proposals'] });

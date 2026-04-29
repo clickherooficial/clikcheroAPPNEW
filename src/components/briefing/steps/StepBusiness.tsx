@@ -85,15 +85,37 @@ export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps)
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <Label htmlFor="ig">Instagram</Label>
-          <Input id="ig" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/..." disabled={disabled} />
+          <Input
+            id="ig"
+            type="text"
+            inputMode="url"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value)}
+            placeholder="@usuario ou link do perfil"
+            disabled={disabled}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+          <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
+            Aceita @usuario, usuario ou URL completa; normalizamos o link automaticamente.
+          </p>
         </div>
         <div>
           <Label htmlFor="fb">Facebook</Label>
-          <Input id="fb" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="https://facebook.com/..." disabled={disabled} />
+          <Input id="fb" type="url" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="https://facebook.com/..." disabled={disabled} />
         </div>
         <div>
           <Label htmlFor="tt">TikTok</Label>
-          <Input id="tt" value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="https://tiktok.com/..." disabled={disabled} />
+          <Input
+            id="tt"
+            type="text"
+            value={tiktok}
+            onChange={(e) => setTiktok(e.target.value)}
+            placeholder="@usuario ou link"
+            disabled={disabled}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
         </div>
       </div>
 

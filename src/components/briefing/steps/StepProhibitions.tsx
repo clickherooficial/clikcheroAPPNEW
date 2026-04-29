@@ -83,7 +83,7 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
 
       <ProhibitionCategorySection
         title="Palavras proibidas"
-        description="Termos que nunca devem aparecer em copy gerado pela IA"
+        description="Termos que nunca devem aparecer nos seus anuncios"
         items={grouped.word}
         onAdd={(vals) => handleAdd('word', vals)}
         onRemove={(id, src) => handleRemove(id, src)}
@@ -92,7 +92,7 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
 
       <ProhibitionCategorySection
         title="Assuntos proibidos"
-        description="Temas que a IA deve evitar (ex: comparacao com concorrentes)"
+        description="Temas que devem ficar de fora (ex: comparacao com concorrentes)"
         items={grouped.topic}
         onAdd={(vals) => handleAdd('topic', vals)}
         onRemove={(id, src) => handleRemove(id, src)}

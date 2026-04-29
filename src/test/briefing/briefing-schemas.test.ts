@@ -44,6 +44,18 @@ describe('businessStepSchema', () => {
     });
     expect(r.success).toBe(true);
   });
+
+  it('normaliza Instagram @handle ou usuario para URL', () => {
+    const r = businessStepSchema.safeParse({
+      niche: 'Moda',
+      short_description: 'Loja online',
+      social_links: { instagram: '@perfildaloja' },
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.social_links?.instagram).toBe('https://www.instagram.com/perfildaloja/');
+    }
+  });
 });
 
 describe('offerSchema', () => {

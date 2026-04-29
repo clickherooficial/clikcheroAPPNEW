@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Square, Search, FileBarChart, Telescope, PanelLeft } from "lucide-react";
+import { Send, Sparkles, Square, Search, FileBarChart, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChat } from "@/hooks/use-chat";
 import { useAttachments } from "@/hooks/use-attachments";
@@ -17,10 +17,10 @@ import { CitationRenderer } from "@/components/knowledge/CitationRenderer";
 import { ChatCreativeGallery } from "@/components/creatives-studio/ChatCreativeGallery";
 
 const suggestions = [
-  "Qual o desempenho das minhas campanhas nos ultimos 7 dias?",
-  "Qual campanha tem o melhor ROAS?",
-  "Compare esta semana com a anterior",
-  "Me de sugestoes para reduzir CPC",
+  "Qual o desempenho das minhas campanhas nos ultimos 7 dias",
+  "Criar nova campanha de venda / Quero vender mais",
+  "Compare essa semana com a anterior",
+  "Criar nova campanha de engajamento / Quero ser visto",
 ];
 
 const quickReports = [
@@ -31,10 +31,11 @@ const quickReports = [
     prompt: "Me da um relatorio semanal completo das minhas campanhas",
   },
   {
-    icon: Telescope,
-    label: "Deep Dive em Campanha",
-    description: "Analise profunda de uma campanha especifica",
-    prompt: "Faz um deep dive na minha campanha de melhor ROAS",
+    icon: Sparkles,
+    label: "Crie imagens de criativos para anunciar",
+    description: "Pedido para gerar imagens de anuncio com base no seu briefing",
+    prompt:
+      "Quero criar imagens de criativos para anunciar no Meta. Use meu briefing, ofertas e identidade visual. Sugira conceitos e gere as imagens.",
   },
 ];
 

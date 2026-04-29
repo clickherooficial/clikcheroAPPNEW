@@ -18,10 +18,10 @@ import { onNavigateToView } from "@/lib/view-navigation";
 type View = "chat" | "painel" | "criativos" | "cerebro" | "approvals" | "ai-health" | "compliance" | "publisher";
 
 const viewTitles: Record<View, string> = {
-  chat: "Conversa",
+  chat: "Meus anúncios",
   painel: "Painel",
   criativos: "Criativos",
-  cerebro: "Cerebro do FURY",
+  cerebro: "Configuracoes",
   approvals: "Aprovacoes",
   "ai-health": "Saude do AI",
   compliance: "Compliance",

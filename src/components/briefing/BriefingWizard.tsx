@@ -1,8 +1,8 @@
-// Wizard de briefing pos-cadastro: 6 passos com auto-save e progresso.
+// Wizard de onboarding: 6 passos de briefing + passo 7 (Meta / Business Manager).
 // Spec: .kiro/specs/briefing-onboarding/ (task 6.1)
 
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -17,14 +17,29 @@ import { StepAudience } from './steps/StepAudience';
 import { StepTone } from './steps/StepTone';
 import { StepVisuals } from './steps/StepVisuals';
 import { StepProhibitions } from './steps/StepProhibitions';
+import { StepMetaConnect } from './steps/StepMetaConnect';
 import {
   audienceStepSchema,
   businessStepSchema,
   toneStepSchema,
   visualStepSchema,
 } from '@/lib/briefing-schemas';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTheme } from 'next-themes';
 
-type StepNum = 1 | 2 | 3 | 4 | 5 | 6;
+const THEME_STORAGE_KEY = 'clickhero-theme';
+
+const WIZARD_TOTAL_STEPS = 7;
+
+/** Lê `?step=` (1–7); invalido/absente retorna null. */
+function parseWizardStepParam(search: string | null): StepNum | null {
+  if (search == null || search === '') return null;
+  const n = Number.parseInt(search, 10);
+  if (!Number.isInteger(n) || n < 1 || n > WIZARD_TOTAL_STEPS) return null;
+  return n as StepNum;
+}
+
+type StepNum = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const STEP_TITLES: Record<StepNum, string> = {
   1: 'Sobre seu negocio',
   2: 'Suas ofertas',
@@ -32,25 +47,67 @@ const STEP_TITLES: Record<StepNum, string> = {
   4: 'Tom de voz da sua marca',
   5: 'Identidade visual',
   6: 'O que NAO usar (proibicoes)',
+  7: 'Meta e Business Manager',
 };
 
 const STEP_HELPER: Record<StepNum, string> = {
-  1: 'Conta pra IA o que sua empresa faz e onde voce esta nas redes',
-  2: 'Produtos ou servicos que voce vende — a IA vai usar pra escrever copy',
+  1: 'Ajude-nos a entender o que sua empresa faz e onde voce esta nas redes.',
+  2: 'O que voce vende: nome, preco e descricao do principal produto ou servico.',
   3: 'Quem e a pessoa ideal que compra de voce: idade, lugar, dor, comportamento',
   4: 'Como SUA MARCA fala nos anuncios: formal/casual, palavras que voce usa, palavras que nao quer ver',
-  5: 'Suas cores e logo — a IA vai aplicar nos criativos gerados',
+  5: 'Suas cores e logo para manter a marca consistente nos seus materiais.',
   6: 'Palavras, assuntos ou imagens que NUNCA podem aparecer (compliance)',
+  7: 'Conecte a conta Meta do seu negocio para importar campanhas, paginas e contas de anuncio. Voce pode ajustar depois em Integracoes.',
 };
 
 export function BriefingWizard() {
   const { briefing, isLoading, isReadOnly, saveStep } = useBriefing();
   const { role } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const [step, setStep] = useState<StepNum>(1);
+  const { setTheme } = useTheme();
+  const [step, setStep] = useState<StepNum>(() => parseWizardStepParam(searchParams.get('step')) ?? 1);
+
+  useEffect(() => {
+    const s = parseWizardStepParam(searchParams.get('step'));
+    if (s != null) setStep(s);
+  }, [searchParams]);
   const [busy, setBusy] = useState(false);
-  const progress = useMemo(() => Math.round(((step - 1) / 6) * 100), [step]);
+  const progress = useMemo(
+    () => Math.round(((step - 1) / WIZARD_TOTAL_STEPS) * 100),
+    [step],
+  );
+  const preWizardThemeRef = useRef<string | null>(null);
+
+  const canUseWizard = !role || role === 'owner' || role === 'admin';
+
+  // Ao abrir o formulario do wizard o tema vira claro (inclui tela de carregamento); ao sair, restaura o preferido antes.
+  useEffect(() => {
+    if (!canUseWizard) return;
+
+    try {
+      preWizardThemeRef.current =
+        typeof window !== 'undefined'
+          ? localStorage.getItem(THEME_STORAGE_KEY) ?? 'dark'
+          : 'dark';
+    } catch {
+      preWizardThemeRef.current = 'dark';
+    }
+    setTheme('light');
+
+    return () => {
+      const prev = preWizardThemeRef.current;
+      preWizardThemeRef.current = null;
+      if (prev != null && prev !== '') {
+        try {
+          setTheme(prev);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, [canUseWizard, setTheme]);
 
   // Bloqueia members (R6.5 / R1.1)
   if (role && role !== 'owner' && role !== 'admin') {
@@ -132,8 +189,12 @@ export function BriefingWizard() {
       }
 
       if (next === 'done') {
-        try { localStorage.removeItem('briefing:skipped-at'); } catch { /* ignore */ }
-        toast({ title: 'Briefing salvo', description: 'A IA agora tem contexto do seu negocio.' });
+        try {
+          localStorage.removeItem('briefing:skipped-at');
+        } catch {
+          /* ignore */
+        }
+        toast({ title: 'Briefing salvo', description: 'Seu perfil de negocio foi atualizado.' });
         navigate('/');
       } else {
         setStep(next);
@@ -156,21 +217,27 @@ export function BriefingWizard() {
     navigate('/');
   };
 
+  const isStepOne = step === 1;
+
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="relative min-h-screen bg-background text-foreground py-8 pb-24">
       <div className="container max-w-3xl">
-        <Card>
+        <Card className="border-border bg-card text-card-foreground shadow-sm">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Briefing — passo {step} de 6: {STEP_TITLES[step]}</CardTitle>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0 flex-1 space-y-1">
+                <CardTitle className="text-balance leading-snug">
+                  {isStepOne
+                    ? `Nos conte sobre o seu negócio - Passo 1 de ${WIZARD_TOTAL_STEPS}`
+                    : `Passo ${step} de ${WIZARD_TOTAL_STEPS}: ${STEP_TITLES[step]}`}
+                </CardTitle>
                 <CardDescription>{STEP_HELPER[step]}</CardDescription>
               </div>
-              <Button variant="ghost" onClick={handleSkip} disabled={busy}>
+              <Button variant="ghost" className="shrink-0" onClick={handleSkip} disabled={busy}>
                 Pular por enquanto
               </Button>
             </div>
-            <Progress value={progress} className="mt-3" />
+            <Progress value={progress} className="mt-3 bg-secondary [&>div]:bg-primary" />
           </CardHeader>
           <CardContent>
             {step === 1 && (
@@ -211,12 +278,36 @@ export function BriefingWizard() {
               <StepProhibitions
                 niche={briefing?.niche ?? null}
                 disabled={busy || isReadOnly}
-                onComplete={() => handleSaveStep(6, {}, 'done')}
+                onComplete={() => setStep(7)}
                 onBack={() => setStep(5)}
+              />
+            )}
+            {step === 7 && (
+              <StepMetaConnect
+                disabled={busy || isReadOnly}
+                onBack={() => setStep(6)}
+                onFinish={() => {
+                  try {
+                    localStorage.removeItem('briefing:skipped-at');
+                  } catch {
+                    /* ignore */
+                  }
+                  toast({
+                    title: 'Tudo pronto',
+                    description: 'Seu perfil de negocio foi salvo. Voce ja pode usar o app.',
+                  });
+                  navigate('/');
+                }}
               />
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-50 md:bottom-8 md:right-10 pointer-events-none">
+        <div className="pointer-events-auto rounded-full border border-border bg-card p-1 shadow-lg">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

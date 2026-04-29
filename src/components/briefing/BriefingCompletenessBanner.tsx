@@ -32,7 +32,7 @@ export function BriefingCompletenessBanner() {
         <Sparkles className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between w-full gap-3">
           <span>
-            <strong>Briefing nao iniciado.</strong> A IA precisa entender seu negocio para gerar criativos e campanhas — leva ~5 min.
+            <strong>Briefing nao iniciado.</strong> Complete seu perfil de negocio — leva cerca de 5 minutos.
           </span>
           <Button size="sm" onClick={() => navigate('/briefing/wizard')}>
             Comecar agora

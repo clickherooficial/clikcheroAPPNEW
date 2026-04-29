@@ -56,7 +56,11 @@ export function RuleProposalCard({ messageId, envelope }: Props) {
 
   const onReject = async () => {
     try {
-      await reject.mutateAsync({ messageId, ruleType: envelope.rule_type });
+      await reject.mutateAsync({
+        messageId,
+        ruleType: envelope.rule_type,
+        confidence: envelope.confidence,
+      });
       setLocalState('rejected');
       toast({ title: 'Proposta descartada' });
     } catch (e) {
@@ -84,7 +88,7 @@ export function RuleProposalCard({ messageId, envelope }: Props) {
             cerebroRulesSubTab: ruleSubTabFor(envelope.rule_type),
           })}
         >
-          Ver no Cerebro <ArrowRight className="h-3 w-3" />
+          Ver em Configuracoes <ArrowRight className="h-3 w-3" />
         </Button>
       </div>
     );

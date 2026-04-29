@@ -20,14 +20,14 @@ export function BehaviorRulesTab() {
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">Nenhuma regra de comportamento ainda</p>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Vá ate a Conversa e diga ao FURY uma instrucao permanente. Ex:
+            Vá ate Meus anúncios e diga ao FURY uma instrucao permanente. Ex:
             <span className="block mt-1 italic text-foreground/80">"Sempre responda em portugues formal"</span>
             <span className="block italic text-foreground/80">"Nunca use a palavra 'garantido'"</span>
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => navigateToView('chat')}>
           <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-          Ir pra Conversa
+          Ir para Meus anúncios
         </Button>
       </div>
     );

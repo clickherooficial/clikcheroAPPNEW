@@ -26,10 +26,10 @@ test.describe('Briefing Wizard — fluxo principal', () => {
     // R1.1: Index redireciona para /briefing/wizard
     await expect(page).toHaveURL(/\/briefing\/wizard/);
     // R1.5: indicador de progresso visivel
-    await expect(page.getByText(/passo 1 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 1 de 7/i)).toBeVisible();
   });
 
-  test('wizard 6 passos completo libera redirect', async ({ page }) => {
+  test('wizard 7 passos completo libera redirect', async ({ page }) => {
     await login(page);
     await page.waitForURL(/\/briefing\/wizard/);
 
@@ -39,7 +39,7 @@ test.describe('Briefing Wizard — fluxo principal', () => {
     await page.getByRole('button', { name: /continuar/i }).click();
 
     // Passo 2 — Oferta principal
-    await expect(page.getByText(/passo 2 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 2 de 7/i)).toBeVisible();
     await page.getByLabel(/^nome/i).fill('Vestido Verao');
     await page.getByLabel(/preco/i).fill('199,90');
     await page.getByLabel(/^descricao/i).fill('Vestido leve para o dia a dia');
@@ -47,25 +47,29 @@ test.describe('Briefing Wizard — fluxo principal', () => {
     await page.getByRole('button', { name: /continuar/i }).click();
 
     // Passo 3 — Audiencia (defaults sao validos)
-    await expect(page.getByText(/passo 3 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 3 de 7/i)).toBeVisible();
     await page.getByRole('button', { name: /continuar/i }).click();
 
     // Passo 4 — Tom (defaults validos)
-    await expect(page.getByText(/passo 4 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 4 de 7/i)).toBeVisible();
     await page.getByText(/acolhedor/i).click();
     await page.getByRole('button', { name: /continuar/i }).click();
 
     // Passo 5 — Visual (paleta default valida)
-    await expect(page.getByText(/passo 5 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 5 de 7/i)).toBeVisible();
     await page.getByRole('button', { name: /continuar/i }).click();
 
     // Passo 6 — Proibicoes
-    await expect(page.getByText(/passo 6 de 6/i)).toBeVisible();
+    await expect(page.getByText(/passo 6 de 7/i)).toBeVisible();
     await page.getByRole('button', { name: /concluir/i }).click();
+
+    // Passo 7 — Meta / BM
+    await expect(page.getByText(/passo 7 de 7/i)).toBeVisible();
+    await page.getByRole('button', { name: /ir para o app/i }).click();
 
     // Apos conclusao, redirect para /
     await expect(page).toHaveURL(/^.*\/$|\/[a-z]*$/);
-    await expect(page.getByText(/briefing salvo/i)).toBeVisible();
+    await expect(page.getByText(/tudo pronto/i)).toBeVisible();
   });
 
   test('auto-save por passo: sair no passo 3 e voltar continua de onde parou', async ({ page }) => {

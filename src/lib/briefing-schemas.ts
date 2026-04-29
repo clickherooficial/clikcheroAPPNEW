@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import { normalizeInstagramUrl, normalizeTikTokUrl } from '@/lib/social-links';
+
 // ====== Helpers ======
 const trimmedNonEmpty = (max: number) =>
   z.string().trim().min(1).max(max);
@@ -14,6 +16,16 @@ const optionalUrl = z
   .or(z.literal(''))
   .optional()
   .transform((v) => (v === '' ? undefined : v));
+
+const optionalFlexibleSocial = (normalizeFn: (s: string) => string | undefined) =>
+  z.preprocess((val: unknown): unknown => {
+    if (val === undefined || val === null) return undefined;
+    if (typeof val !== 'string') return val;
+    const t = val.trim();
+    if (!t) return undefined;
+    const n = normalizeFn(t);
+    return n !== undefined ? n : t;
+  }, z.union([z.string().url(), z.undefined()]));
 
 const hexColor = z
   .string()
@@ -28,9 +40,9 @@ export const businessStepSchema = z.object({
   website_url: optionalUrl,
   social_links: z
     .object({
-      instagram: optionalUrl,
+      instagram: optionalFlexibleSocial(normalizeInstagramUrl),
       facebook: optionalUrl,
-      tiktok: optionalUrl,
+      tiktok: optionalFlexibleSocial(normalizeTikTokUrl),
     })
     .partial()
     .default({}),

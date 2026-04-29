@@ -83,7 +83,7 @@ export function StepVisuals({ initial, disabled, onSubmit, onBack }: Props) {
 
       <div>
         <Label className="mb-1 block">Imagens de referencia ({moodBoard.length}/{MOOD_BOARD_MAX_ITEMS})</Label>
-        <p className="text-xs text-muted-foreground mb-2">Anuncios, posts ou fotos que tem o "clima" que voce quer pros seus criativos. A IA usa de inspiracao visual.</p>
+        <p className="text-xs text-muted-foreground mb-2">Anuncios, posts ou fotos que mostram o clima visual que voce quer para a marca.</p>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {moodBoard.map((m) => (
             <div key={m.id} className="relative aspect-square rounded-md overflow-hidden border bg-muted">

@@ -45,6 +45,52 @@ function calcCost(promptTokens: number, completionTokens: number): number {
   return Math.round(cost * 1_000_000) / 1_000_000;  // 6 casas decimais
 }
 
+/**
+ * Usuario ja confirmou na MESMA mensagem (ex.: "Sim" ao "quer salvar preset?").
+ * So creative_pipeline + texto curto — evita dupla confirmacao (chat + card).
+ */
+function isShortAffirmativeConsent(text: string): boolean {
+  const raw = text.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (raw.length > 160) return false;
+  const firstLine = raw.split('\n')[0]?.trim() ?? '';
+  const oneLine = firstLine.replace(/^[+\s]+/, '').replace(/[!?.…]+$/g, '').trim();
+  if (/\b(não|nao)\b/.test(oneLine)) return false;
+  const exact = new Set([
+    'sim',
+    'isso',
+    'isso mesmo',
+    'pode',
+    'pode salvar',
+    'salva',
+    'salvar',
+    'quero',
+    'quero sim',
+    'confirmo',
+    'confirmado',
+    'beleza',
+    'fechado',
+    'fechou',
+    'ok',
+    'okay',
+    'ta',
+    'tá',
+    'blz',
+    'manda',
+    'pode ser',
+    'claro',
+    'com certeza',
+    'ajuda sim',
+    'pode sim',
+    'sim pode',
+    'yes',
+    'yep',
+    'yeah',
+  ]);
+  if (exact.has(oneLine)) return true;
+  if (/^(sim|pode|ok|tá|ta)\b/.test(oneLine) && oneLine.length <= 56) return true;
+  return false;
+}
+
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
 
@@ -458,6 +504,7 @@ Deno.serve(async (req) => {
                   authHeader,
                   {
                     userMessageId,
+                    userMessageText: message,
                     userId: user.id,
                     attachmentIds,
                     proposedRuleRef,
@@ -650,7 +697,7 @@ Deno.serve(async (req) => {
 // e persistido em chat_messages.metadata da assistant message.
 type ProposedRuleCapture = {
   proposed_rule: Record<string, unknown>;
-  status: 'pending';
+  status: 'pending' | 'accepted';
   rule_type: 'behavior' | 'action' | 'creative_pipeline';
   confidence: number;
 };
@@ -664,6 +711,7 @@ async function executeTool(
   authHeader: string,
   ctx?: {
     userMessageId: string | null;
+    userMessageText: string;
     userId: string;
     attachmentIds: string[];
     proposedRuleRef: { current: ProposedRuleCapture | null };
@@ -804,6 +852,7 @@ async function handleProposeRule(
   args: Record<string, unknown>,
   ctx?: {
     userMessageId: string | null;
+    userMessageText: string;
     userId: string;
     attachmentIds: string[];
     proposedRuleRef: { current: ProposedRuleCapture | null };
@@ -904,11 +953,55 @@ async function handleProposeRule(
     if (assetId) params.asset_id = assetId;
     proposedRule.transform = { transform_type: transform.transform_type, params };
   }
+  if (ruleType === 'creative_pipeline' && !proposedRule.transform) {
+    proposedRule.transform = { transform_type: 'custom', params: {} };
+  }
+
+  let proposalStatus: 'pending' | 'accepted' = 'pending';
+  let autoSavedRuleId: string | null = null;
+
+  const userText = ctx.userMessageText ?? '';
+  const autoAcceptPreset =
+    ruleType === 'creative_pipeline' &&
+    !!ctx.userMessageId &&
+    isShortAffirmativeConsent(userText) &&
+    args.needs_asset_upload !== true;
+
+  if (autoAcceptPreset) {
+    const tr = proposedRule.transform as { transform_type?: string; params?: Record<string, unknown> };
+    const transformType = tr?.transform_type ?? 'custom';
+    const transformParams = tr?.params ?? {};
+    const { data: pipelineRow, error: insErr } = await supabase
+      .from('creative_pipeline_rules')
+      .insert({
+        company_id: companyId,
+        created_by: ctx.userId,
+        name,
+        description,
+        transform_type: transformType,
+        transform_params: transformParams,
+        applies_to: { media_types: ['image'], scope },
+        priority: 100,
+        is_enabled: true,
+        proposal_status: 'accepted',
+        confidence,
+        learned_from_message_id: ctx.userMessageId,
+        original_text: reasoning || null,
+      })
+      .select('id')
+      .single();
+    if (!insErr && pipelineRow?.id) {
+      proposalStatus = 'accepted';
+      autoSavedRuleId = pipelineRow.id as string;
+    } else if (insErr) {
+      console.warn('[propose_rule] auto-accept creative_pipeline failed:', insErr);
+    }
+  }
 
   // Captura pra ser persistida na assistant message metadata
   ctx.proposedRuleRef.current = {
     proposed_rule: proposedRule,
-    status: 'pending',
+    status: proposalStatus,
     rule_type: ruleType as RuleType,
     confidence,
   };
@@ -920,7 +1013,8 @@ async function handleProposeRule(
       user_id: ctx.userId,
       message_id: ctx.userMessageId,
       rule_type: ruleType,
-      action: 'proposed',
+      action: proposalStatus === 'accepted' ? 'accepted' : 'proposed',
+      rule_id: autoSavedRuleId,
       confidence,
       latency_ms: Date.now() - ctx.runStart,
     });
@@ -928,6 +1022,10 @@ async function handleProposeRule(
     console.warn('[propose_rule] event insert failed (non-blocking):', err);
   }
 
+  if (proposalStatus === 'accepted') {
+    return 'Preset de pipeline salvo na conta (usuario ja tinha confirmado na mensagem). ' +
+      'Responda que ficou salvo de vez. NAO peca pra clicar em card nem "confirmar de novo" na UI.';
+  }
   return 'Proposta de regra registrada. Continue respondendo normalmente ao usuario; o card de aprovacao sera renderizado pela UI inline.';
 }
 

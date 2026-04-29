@@ -39,7 +39,7 @@ export function ComplianceActionCard({ action }: Props) {
                 Proibicao adicionada: <span className="text-violet-300">"{prohibition.value}"</span>
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Aparece em <strong>Compliance</strong> e <strong>Cerebro do FURY → Identidade</strong>.
+                Aparece em <strong>Compliance</strong> e <strong>Configuracoes → Identidade</strong>.
                 Novos criativos com isso sao bloqueados automaticamente.
               </div>
             </div>

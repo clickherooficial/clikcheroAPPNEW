@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TagInput } from '@/components/briefing/TagInput';
+import { cn } from '@/lib/utils';
 import type { AudienceData } from '@/types/briefing';
 
 interface Props {
@@ -14,6 +15,39 @@ interface Props {
   onSubmit: (audience: AudienceData) => void;
   onBack: () => void;
 }
+
+const CONSCIENCIA_DOR_OPTIONS = [
+  {
+    level: 1 as const,
+    titulo: 'Quase nao percebe',
+    texto:
+      'A pessoa nem chama de "problema" ainda: segue rotina sem parar pra entender uma dor clara.',
+  },
+  {
+    level: 2 as const,
+    titulo: 'Senti algo incomodo ou sintoma',
+    texto:
+      'Percebe que algo incomoda ou da errado, mas ainda sem nome certo nem urgencia forte.',
+  },
+  {
+    level: 3 as const,
+    titulo: 'Ja sabe que precisa resolver',
+    texto:
+      'Reconhece a frustracao ou o obstaculo; conversa sobre isso com outras pessoas ou busca informal.',
+  },
+  {
+    level: 4 as const,
+    titulo: 'Entende o problema e estuda opcoes',
+    texto:
+      'Consome videos, artigos gratuitos ou conteudos de ajuda — compara categorias; ainda pode nao estar escolhendo marcas.',
+  },
+  {
+    level: 5 as const,
+    titulo: 'Ja procura solucao pra comprar',
+    texto:
+      'Compara fornecedores, precos ou planos ativamente — esta perto da decisao de compra.',
+  },
+] satisfies { level: 1 | 2 | 3 | 4 | 5; titulo: string; texto: string }[];
 
 export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
   const [ageMin, setAgeMin] = useState(initial.ageRange?.min ?? 18);
@@ -95,12 +129,48 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
         </div>
       </div>
 
-      <div>
-        <Label>Nivel de consciencia da dor (1 = nao sabe que tem; 5 = ja procura solucao)</Label>
-        <div className="pt-2">
-          <Slider min={1} max={5} step={1} value={[awareness]} onValueChange={(v) => setAwareness((v[0] ?? 3) as 1 | 2 | 3 | 4 | 5)} disabled={disabled} />
-          <p className="text-xs text-muted-foreground mt-1">Nivel: {awareness}</p>
+      <div className="space-y-2">
+        <div>
+          <Label className="text-base">Em que nivel esta o publico sobre a dor ou necessidade?</Label>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Isso diz se a pessoa ainda esta descobrindo o problema ou ja veio para comprar. Marque o que mais parece com quem compra de voce.
+          </p>
         </div>
+        <RadioGroup
+          value={String(awareness)}
+          onValueChange={(v) => setAwareness(Number.parseInt(v, 10) as 1 | 2 | 3 | 4 | 5)}
+          disabled={disabled}
+          className="gap-2"
+          aria-labelledby="audience-awareness-heading"
+        >
+          <span id="audience-awareness-heading" className="sr-only">
+            Nivel de consciencia sobre a dor ou necessidade
+          </span>
+          {CONSCIENCIA_DOR_OPTIONS.map((opt) => (
+            <label
+              key={opt.level}
+              htmlFor={`audience-awareness-${opt.level}`}
+              className={cn(
+                'flex cursor-pointer gap-3 rounded-lg border p-3 text-left transition-colors',
+                'hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5',
+                disabled && 'cursor-not-allowed opacity-70',
+              )}
+            >
+              <RadioGroupItem
+                value={String(opt.level)}
+                id={`audience-awareness-${opt.level}`}
+                className="mt-0.5 shrink-0"
+              />
+              <div className="min-w-0 space-y-1">
+                <span className="flex flex-wrap items-baseline gap-2 font-medium leading-snug">
+                  <span className="tabular-nums text-muted-foreground">Nivel {opt.level}</span>
+                  <span>— {opt.titulo}</span>
+                </span>
+                <p className="text-sm text-muted-foreground leading-relaxed">{opt.texto}</p>
+              </div>
+            </label>
+          ))}
+        </RadioGroup>
       </div>
 
       <div>

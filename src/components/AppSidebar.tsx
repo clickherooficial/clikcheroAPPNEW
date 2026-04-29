@@ -17,10 +17,10 @@ interface AppSidebarProps {
 
 // 5 itens principais — sidebar enxuta com nomes em linguagem de usuario
 const navItems: { id: View; label: string; icon: React.ElementType; helper?: string }[] = [
-  { id: "chat", label: "Conversa", icon: MessageSquare, helper: "Onde voce fala com o FURY" },
+  { id: "chat", label: "Meus anúncios", icon: MessageSquare, helper: "Chat e acoes para seus anúncios" },
   { id: "painel", label: "Painel", icon: BarChart3, helper: "KPIs, analise e orcamento" },
   { id: "criativos", label: "Criativos", icon: ImagePlus, helper: "Anuncios criados pela IA e da Meta" },
-  { id: "cerebro", label: "Cerebro do FURY", icon: Brain, helper: "Regras, memoria e identidade" },
+  { id: "cerebro", label: "Configuracoes", icon: Brain, helper: "Regras, memoria e identidade" },
   { id: "approvals", label: "Aprovacoes", icon: ShieldAlert, helper: "Acoes pendentes de aprovacao" },
 ];
 

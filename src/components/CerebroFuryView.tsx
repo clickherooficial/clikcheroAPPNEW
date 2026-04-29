@@ -51,7 +51,7 @@ export default function CerebroFuryView() {
               <Brain className="w-6 h-6 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Cerebro do FURY</h1>
+              <h1 className="text-xl font-bold text-foreground">Configuracoes</h1>
               <p className="text-sm text-muted-foreground">Tudo que o assistente sabe e faz sobre seu negocio.</p>
             </div>
           </div>

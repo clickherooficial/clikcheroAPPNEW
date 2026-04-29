@@ -28,7 +28,7 @@ export function CreativePipelineTab() {
         </div>
         <Button variant="outline" size="sm" onClick={() => navigateToView('chat')}>
           <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-          Ir pra Conversa
+          Ir para Meus anúncios
         </Button>
       </div>
     );

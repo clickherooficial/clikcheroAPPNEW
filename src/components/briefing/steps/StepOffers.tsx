@@ -44,6 +44,8 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const hasPrimary = offers.some((o) => o.is_primary);
+  const editingOffer = editingId ? offers.find((o) => o.id === editingId) : undefined;
+  const isEditingPrimary = editingOffer?.is_primary === true;
 
   const startEdit = (o: CompanyOffer) => {
     setEditingId(o.id);
@@ -113,7 +115,9 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
     <div className="space-y-4">
       <div className="space-y-2">
         {offers.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma oferta cadastrada. Adicione ao menos uma oferta principal.</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Ainda nao tem nada aqui. Comece pelo que voce mais vende.
+          </p>
         )}
         {offers.map((o) => (
           <Card key={o.id}>
@@ -151,25 +155,45 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
 
       <Card className="border-dashed">
         <CardContent className="space-y-3 py-4">
-          <p className="text-sm font-medium">{editingId ? 'Editando oferta' : (hasPrimary ? 'Adicionar oferta secundaria' : 'Cadastrar oferta principal')}</p>
+          <p className="text-sm font-medium">
+            {editingId
+              ? 'Editar esta oferta'
+              : hasPrimary
+                ? 'Cadastrar outro produto ou servico'
+                : 'Cadastrar seu principal produto ou servico'}
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label>Nome *</Label>
-              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} disabled={disabled} maxLength={120} />
+            <div className="md:col-span-2 space-y-1.5">
+              <Label htmlFor="offer-name">
+                {!hasPrimary || isEditingPrimary
+                  ? 'Informe o nome do seu principal produto *'
+                  : 'Nome do produto ou servico *'}
+              </Label>
+              <Input
+                id="offer-name"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                disabled={disabled}
+                maxLength={120}
+                placeholder="Ex: Mentoria de marketing, Plano trimestral, Curso completo"
+              />
             </div>
-            <div>
-              <Label>Preco (BRL) *</Label>
-              <Input value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="0,00" disabled={disabled} />
+            <div className="space-y-1.5">
+              <Label htmlFor="offer-price">Qual o preco de venda (mensal, total) *</Label>
+              <p className="text-xs text-muted-foreground">Pode ser valor unico ou mensalidade — o que fizer sentido pra voce.</p>
+              <Input
+                id="offer-price"
+                value={draft.price}
+                onChange={(e) => setDraft({ ...draft, price: e.target.value })}
+                placeholder="0,00"
+                disabled={disabled}
+                inputMode="decimal"
+              />
             </div>
-          </div>
-          <div>
-            <Label>Descricao curta *</Label>
-            <Textarea value={draft.short_description} onChange={(e) => setDraft({ ...draft, short_description: e.target.value })} disabled={disabled} maxLength={280} rows={2} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label>Formato</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="offer-format">Tipo do que voce vende</Label>
               <select
+                id="offer-format"
                 className="w-full h-10 rounded-md border border-input bg-background px-3"
                 value={draft.format}
                 onChange={(e) => setDraft({ ...draft, format: e.target.value as OfferFormat })}
@@ -182,14 +206,39 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
                 <option value="other">Outro</option>
               </select>
             </div>
-            <div>
-              <Label>URL de venda</Label>
-              <Input value={draft.sales_url} onChange={(e) => setDraft({ ...draft, sales_url: e.target.value })} placeholder="https://..." disabled={disabled} />
-            </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleSave} disabled={disabled}>
-              <Plus className="h-4 w-4 mr-2" /> {editingId ? 'Salvar' : 'Adicionar'}
+          <div className="space-y-1.5">
+            <Label htmlFor="offer-desc">Descricao curta *</Label>
+            <p className="text-xs text-muted-foreground">Em poucas frases: o que a pessoa recebe ao comprar.</p>
+            <Textarea
+              id="offer-desc"
+              value={draft.short_description}
+              onChange={(e) => setDraft({ ...draft, short_description: e.target.value })}
+              disabled={disabled}
+              maxLength={280}
+              rows={3}
+              placeholder="Ex: Acesso por 6 meses, suporte no WhatsApp, certificado..."
+            />
+          </div>
+          <div>
+            <Label htmlFor="offer-url">Link para comprar ou pagina do produto (opcional)</Label>
+            <Input
+              id="offer-url"
+              value={draft.sales_url}
+              onChange={(e) => setDraft({ ...draft, sales_url: e.target.value })}
+              placeholder="https://..."
+              disabled={disabled}
+              type="url"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              onClick={handleSave}
+              disabled={disabled}
+              className="h-auto min-h-10 whitespace-normal px-4 py-2.5 inline-flex flex-wrap items-center justify-center gap-2 text-center"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              <span>{editingId ? 'Salvar alteracoes' : 'Adicionar e cadastrar mais produtos'}</span>
             </Button>
             {editingId && (
               <Button variant="ghost" onClick={cancelEdit} disabled={disabled}>

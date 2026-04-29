@@ -309,6 +309,8 @@ Deno.serve(async (req) => {
     // Briefing-onboarding (task 8.2): hint quando briefing esta incompleto.
     // Permite chat normal mas instrui IA a sugerir completar antes de geracao de criativo.
     let briefingHint = '';
+    let briefingContext = '';
+    let specialistBriefingContext = '';
     if (companyId) {
       try {
         const { data: bs } = await supabaseAdmin
@@ -322,6 +324,54 @@ Deno.serve(async (req) => {
         }
       } catch {
         // sem briefing -> sem hint, segue normal
+      }
+
+      try {
+        const { data: briefing } = await supabaseAdmin.rpc('get_company_briefing', {
+          p_company_id: companyId,
+          p_purpose: 'chat',
+        });
+        const payload = (briefing ?? null) as {
+          primaryOffer?: {
+            name?: string | null;
+            title?: string | null;
+            short_description?: string | null;
+            description?: string | null;
+            price?: number | string | null;
+            format?: string | null;
+          } | null;
+        } | null;
+        const primaryOffer = payload?.primaryOffer ?? null;
+        const offerName = (primaryOffer?.name ?? primaryOffer?.title ?? '').trim();
+        const offerDescription = (
+          primaryOffer?.short_description ??
+          primaryOffer?.description ??
+          ''
+        ).trim();
+        const offerPrice = primaryOffer?.price;
+        const offerFormat = (primaryOffer?.format ?? '').trim();
+
+        if (offerName) {
+          const details = [
+            offerDescription ? `Descricao: ${offerDescription}` : '',
+            offerPrice !== null && offerPrice !== undefined && String(offerPrice).trim() !== ''
+              ? `Preco: ${offerPrice}`
+              : '',
+            offerFormat ? `Formato: ${offerFormat}` : '',
+          ].filter(Boolean);
+          briefingContext = `\n\n## DADOS ESTRUTURADOS DO BRIEFING (FONTE OFICIAL)\nOferta principal cadastrada: ${offerName}\n${details.map((d) => `- ${d}`).join('\n')}\nRegra: quando o usuario pedir criativo/venda, confirme primeiro se quer anunciar esta oferta cadastrada. Nao pergunte "o que voce vende?" do zero enquanto essa oferta estiver disponivel. Nao diga que vai "buscar no briefing" se o dado ja estiver nesta secao.`;
+          specialistBriefingContext = [
+            `Oferta principal cadastrada: ${offerName}`,
+            offerDescription ? `Descricao: ${offerDescription}` : '',
+            offerPrice !== null && offerPrice !== undefined && String(offerPrice).trim() !== ''
+              ? `Preco: ${offerPrice}`
+              : '',
+            offerFormat ? `Formato: ${offerFormat}` : '',
+            'Se faltar contexto, confirme esta oferta primeiro antes de perguntar "o que voce vende?".',
+          ].filter(Boolean).join('\n');
+        }
+      } catch (err) {
+        console.warn('[ai-chat] failed to fetch briefing payload (non-blocking):', err);
       }
     }
 
@@ -353,7 +403,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    let systemContent = SYSTEM_PROMPT + memoryContext + summaryContext + briefingHint + behaviorRulesContext;
+    let systemContent = SYSTEM_PROMPT + memoryContext + summaryContext + briefingHint + briefingContext + behaviorRulesContext;
 
     // Construir user content (text-only OU multimodal)
     type ContentPart =
@@ -511,6 +561,7 @@ Deno.serve(async (req) => {
                     complianceActionRef,
                     runStart,
                     runId,
+                    specialistBriefingContext,
                   },
                 );
                 toolResults.push({ tool_call_id: tc.id, role: 'tool', content: result });
@@ -718,6 +769,7 @@ async function executeTool(
     complianceActionRef: { current: ComplianceActionCapture | null };
     runStart: number;
     runId: string | null;
+    specialistBriefingContext?: string;
   },
 ): Promise<string> {
   try {
@@ -763,10 +815,11 @@ async function executeTool(
       }
       case 'delegate_to_creative': {
         const a = args as { question: string; context?: string };
+        const mergedContext = [ctx?.specialistBriefingContext, a.context].filter(Boolean).join('\n\n');
         const r = await invokeSpecialist({
           endpoint: 'creative-specialist',
           question: a.question,
-          context: a.context,
+          context: mergedContext || undefined,
           companyId,
           conversationId: convIdForTools,
           parentRunId: ctx?.runId ?? null,

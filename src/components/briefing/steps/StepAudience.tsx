@@ -1,4 +1,4 @@
-// Passo 3 — Audiencia. Spec: briefing-onboarding (task 6.4)
+// Passo 3 — Audiência. Spec: briefing-onboarding (task 6.4)
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -19,33 +19,33 @@ interface Props {
 const CONSCIENCIA_DOR_OPTIONS = [
   {
     level: 1 as const,
-    titulo: 'Quase nao percebe',
+    titulo: 'Quase não percebe',
     texto:
-      'A pessoa nem chama de "problema" ainda: segue rotina sem parar pra entender uma dor clara.',
+      'A pessoa nem chama de "problema" ainda: segue a rotina sem parar para entender uma dor clara.',
   },
   {
     level: 2 as const,
-    titulo: 'Senti algo incomodo ou sintoma',
+    titulo: 'Sente algo incômodo ou um sintoma',
     texto:
-      'Percebe que algo incomoda ou da errado, mas ainda sem nome certo nem urgencia forte.',
+      'Percebe que algo incomoda ou está errado, mas ainda sem um nome certo nem urgência forte.',
   },
   {
     level: 3 as const,
-    titulo: 'Ja sabe que precisa resolver',
+    titulo: 'Já sabe que precisa resolver',
     texto:
-      'Reconhece a frustracao ou o obstaculo; conversa sobre isso com outras pessoas ou busca informal.',
+      'Reconhece a frustração ou o obstáculo; conversa sobre isso com outras pessoas ou busca ajuda informal.',
   },
   {
     level: 4 as const,
-    titulo: 'Entende o problema e estuda opcoes',
+    titulo: 'Entende o problema e estuda opções',
     texto:
-      'Consome videos, artigos gratuitos ou conteudos de ajuda — compara categorias; ainda pode nao estar escolhendo marcas.',
+      'Consome vídeos, artigos gratuitos ou conteúdos de ajuda — compara categorias; ainda pode não estar escolhendo marcas.',
   },
   {
     level: 5 as const,
-    titulo: 'Ja procura solucao pra comprar',
+    titulo: 'Já procura solução para comprar',
     texto:
-      'Compara fornecedores, precos ou planos ativamente — esta perto da decisao de compra.',
+      'Compara fornecedores, preços ou planos ativamente — está perto da decisão de compra.',
   },
 ] satisfies { level: 1 | 2 | 3 | 4 | 5; titulo: string; texto: string }[];
 
@@ -69,17 +69,17 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Idade minima *</Label>
+          <Label>Idade mínima *</Label>
           <Input type="number" value={ageMin} onChange={(e) => setAgeMin(parseInt(e.target.value) || 0)} disabled={disabled} />
         </div>
         <div>
-          <Label>Idade maxima *</Label>
+          <Label>Idade máxima *</Label>
           <Input type="number" value={ageMax} onChange={(e) => setAgeMax(parseInt(e.target.value) || 0)} disabled={disabled} />
         </div>
       </div>
 
       <div>
-        <Label>Genero predominante</Label>
+        <Label>Gênero predominante</Label>
         <select
           className="w-full h-10 rounded-md border border-input bg-background px-3"
           value={gender ?? 'mixed'}
@@ -94,7 +94,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <Label>Pais *</Label>
+          <Label>País *</Label>
           <Input value={country} onChange={(e) => setCountry(e.target.value)} disabled={disabled} />
         </div>
         <div>
@@ -109,7 +109,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <Label>Profissao tipica</Label>
+          <Label>Profissão típica</Label>
           <Input value={occupation} onChange={(e) => setOccupation(e.target.value)} disabled={disabled} />
         </div>
         <div>
@@ -120,9 +120,9 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
             onChange={(e) => setIncome((e.target.value || undefined) as AudienceData['incomeRange'])}
             disabled={disabled}
           >
-            <option value="">Nao especificar</option>
+            <option value="">Não especificar</option>
             <option value="low">Baixa</option>
-            <option value="mid">Media</option>
+            <option value="mid">Média</option>
             <option value="high">Alta</option>
             <option value="premium">Premium</option>
           </select>
@@ -131,9 +131,9 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
 
       <div className="space-y-2">
         <div>
-          <Label className="text-base">Em que nivel esta o publico sobre a dor ou necessidade?</Label>
+          <Label className="text-base">Em que nível está o público sobre a dor ou necessidade?</Label>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            Isso diz se a pessoa ainda esta descobrindo o problema ou ja veio para comprar. Marque o que mais parece com quem compra de voce.
+            Isso diz se a pessoa ainda está descobrindo o problema ou já veio para comprar. Marque o que mais parece com quem compra de você.
           </p>
         </div>
         <RadioGroup
@@ -144,7 +144,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
           aria-labelledby="audience-awareness-heading"
         >
           <span id="audience-awareness-heading" className="sr-only">
-            Nivel de consciencia sobre a dor ou necessidade
+            Nível de consciência sobre a dor ou necessidade
           </span>
           {CONSCIENCIA_DOR_OPTIONS.map((opt) => (
             <label
@@ -163,7 +163,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
               />
               <div className="min-w-0 space-y-1">
                 <span className="flex flex-wrap items-baseline gap-2 font-medium leading-snug">
-                  <span className="tabular-nums text-muted-foreground">Nivel {opt.level}</span>
+                  <span className="tabular-nums text-muted-foreground">Nível {opt.level}</span>
                   <span>— {opt.titulo}</span>
                 </span>
                 <p className="text-sm text-muted-foreground leading-relaxed">{opt.texto}</p>
@@ -184,7 +184,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
       </div>
 
       <div>
-        <Label>Frases que o publico costuma usar</Label>
+        <Label>Frases que o público costuma usar</Label>
         <TagInput value={samples} onChange={setSamples} placeholder='Ex: "to cansada de dieta"' disabled={disabled} max={20} />
       </div>
 

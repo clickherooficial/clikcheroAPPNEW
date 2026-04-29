@@ -380,7 +380,7 @@ const ChatView = () => {
                 className={cn(
                   "px-4 py-3 rounded-2xl text-[13px] leading-relaxed",
                   msg.role === "user"
-                    ? "chat-gradient text-white rounded-br-md max-w-[80%] whitespace-pre-wrap"
+                    ? "bg-primary text-primary-foreground rounded-br-md max-w-[80%] whitespace-pre-wrap"
                     : "bg-chat-ai text-chat-ai-foreground rounded-bl-md space-y-0.5"
                 )}
               >

@@ -174,6 +174,9 @@ export async function handlePublishCampaign(
   let failedStep: string | undefined;
   const rawErrorMsg = String(respBody.error ?? respBody.message ?? text).slice(0, 300);
 
+  // Tenta traduzir subcode da Meta pra mensagem acionavel em PT.
+  const metaTranslated = translateMetaError(respBody);
+
   if (status === 422 || /compliance/i.test(rawErrorMsg)) {
     kind = 'compliance';
     failedStep = 'compliance';
@@ -186,11 +189,14 @@ export async function handlePublishCampaign(
 
   await markFailed(supabase, proposal_id, {
     error_kind: kind,
-    message: rawErrorMsg,
+    message: metaTranslated?.short ?? rawErrorMsg,
     raw: respBody,
     failed_at_step: failedStep,
   });
 
+  if (metaTranslated) {
+    return `Diga ao usuario LITERALMENTE: "${metaTranslated.userMessage}"`;
+  }
   if (kind === 'compliance') {
     return `Diga ao usuario LITERALMENTE: "Seu anuncio foi bloqueado por compliance: ${rawErrorMsg}. Quer que eu sugira ajustes no texto pra liberar?"`;
   }
@@ -201,6 +207,55 @@ export async function handlePublishCampaign(
     return 'Diga ao usuario LITERALMENTE: "Houve um erro temporario no Meta, posso tentar de novo agora?"';
   }
   return `A publicacao falhou (HTTP ${status}). Diga ao usuario LITERALMENTE: "Algo deu errado: ${rawErrorMsg}. Quer tentar de novo?"`;
+}
+
+/**
+ * Traduz erros comuns da Meta API (parseado do JSON aninhado em respBody.meta)
+ * pra mensagem acionavel em portugues. Quando nao reconhece o subcode, retorna
+ * null e o caller usa o fallback generico.
+ */
+function translateMetaError(respBody: Record<string, unknown>): { short: string; userMessage: string } | null {
+  const meta = (respBody.meta ?? {}) as { error?: { code?: number; error_subcode?: number; error_user_msg?: string; error_user_title?: string; message?: string } };
+  const err = meta.error;
+  if (!err) return null;
+
+  const subcode = err.error_subcode;
+  const userMsg = err.error_user_msg ?? '';
+  const title = err.error_user_title ?? '';
+
+  switch (subcode) {
+    case 1359188: // Nenhuma forma de pagamento
+      return {
+        short: 'payment_method_missing',
+        userMessage: 'Sua conta do Meta Ads esta sem forma de pagamento valida. Entra em https://business.facebook.com/billing_hub/payment_settings, adiciona um cartao ou Pix, e me avisa que eu publico de novo.',
+      };
+    case 1487427: // Limite de gasto atingido
+      return {
+        short: 'spending_limit_reached',
+        userMessage: 'Sua conta do Meta atingiu o limite de gasto da conta. Aumenta o limite em Meta Ads Manager > Configuracoes da Conta > Limite de Gasto, ou aguarda o ciclo virar.',
+      };
+    case 2635:
+    case 2655: // Conta desativada
+      return {
+        short: 'account_disabled',
+        userMessage: 'Sua conta de anuncios do Meta esta desativada. Verifica em business.facebook.com qual o motivo (politica violada, pagamento atrasado, etc) e me avisa quando reativar.',
+      };
+    case 1885154: // Promoted object missing
+      return {
+        short: 'promoted_object_required',
+        userMessage: 'O Meta exige um pixel configurado pra esse tipo de campanha. Vou tentar uma config alternativa — me avisa pra eu refazer a proposta.',
+      };
+  }
+
+  // Sem subcode mapeado mas tem error_user_msg — repassa direto (Meta ja escreve em PT)
+  if (userMsg) {
+    const composed = title ? `${title}: ${userMsg}` : userMsg;
+    return {
+      short: `meta_${subcode ?? err.code ?? 'unknown'}`,
+      userMessage: composed,
+    };
+  }
+  return null;
 }
 
 // ============================================================

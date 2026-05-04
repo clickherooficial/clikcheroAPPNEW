@@ -461,12 +461,22 @@ Deno.serve(async (req) => {
   // 2. Adset
   {
     await logStep('adset', 'pending');
+    // 2026-05-04: Meta passou a exigir sinalizacao do Advantage Audience
+    // (subcode 1870227 — "A sinalização de público Advantage é obrigatória").
+    // Setamos advantage_audience=0 (desabilitado) pra honrar o targeting
+    // demografico explicito que o agente monta. Quem quiser expansao automatica
+    // do publico futuramente pode mudar pra 1 via override.
+    const targetingWithAutomation = {
+      ...(adsetData.targeting as Record<string, unknown>),
+      targeting_automation: { advantage_audience: 0 },
+    };
+
     const payload: Record<string, unknown> = {
       name: adsetData.name,
       campaign_id: ids.campaign_id,
       optimization_goal: adsetData.optimization_goal,
       billing_event: adsetData.billing_event,
-      targeting: adsetData.targeting,
+      targeting: targetingWithAutomation,
       status: campaignData.status,
       // Meta API exige bid_strategy quando adset tem budget (ABO).
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',

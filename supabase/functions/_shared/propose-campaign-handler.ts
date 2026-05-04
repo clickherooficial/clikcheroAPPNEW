@@ -47,6 +47,7 @@ const InputSchema = z.object({
     description: z.string().max(27).optional(),
     cta: z.enum(['LEARN_MORE', 'SHOP_NOW', 'SIGN_UP', 'SUBSCRIBE', 'DOWNLOAD', 'CONTACT_US', 'GET_OFFER', 'BOOK_NOW']).optional(),
   }).optional(),
+  page_id: z.string().optional(), // page_id OU nome parcial (resolve no handler)
 });
 
 export type ProposeCampaignInput = z.infer<typeof InputSchema>;
@@ -119,10 +120,25 @@ export async function handleProposeCampaign(
   }
   const ctx = prereq.context!;
 
-  // 3.1) Page ambigua: agente pergunta no chat antes de publicar
+  // 3.1) Resolver page_id quando o user escolheu uma Pagina (handler aceita
+  // page_id numerico OU nome / parte do nome — case-insensitive).
+  if (input.page_id && prereq.pages_ambiguous && prereq.pages_ambiguous.length > 1) {
+    const needle = input.page_id.trim().toLowerCase();
+    const match = prereq.pages_ambiguous.find((p) =>
+      p.page_id === input.page_id ||
+      (p.name ?? '').toLowerCase().includes(needle)
+    );
+    if (match) {
+      ctx.page = { id: match.id, page_id: match.page_id, name: match.name };
+      // limpa pages_ambiguous pra nao acionar o branch de pergunta abaixo
+      prereq.pages_ambiguous = undefined;
+    }
+  }
+
+  // 3.2) Page ambigua: agente pergunta no chat antes de publicar
   if (prereq.pages_ambiguous && prereq.pages_ambiguous.length > 1) {
     const list = prereq.pages_ambiguous.map((p) => `- ${p.name ?? p.page_id}`).join('\n');
-    return `Voce tem mais de uma Pagina do Facebook ativa. Pergunte ao usuario LITERALMENTE: "Qual dessas Paginas voce quer usar pra esse anuncio?" e liste:\n${list}\n\nNao chame propose_campaign de novo ate o usuario escolher; quando escolher, vou usar a primeira ativa por enquanto. (Setting de Pagina padrao virara em breve.)`;
+    return `Voce tem mais de uma Pagina do Facebook ativa. Pergunte ao usuario LITERALMENTE: "Qual dessas Paginas voce quer usar pra esse anuncio?" e liste:\n${list}\n\nNao chame propose_campaign de novo ate o usuario escolher; quando ele responder com o nome da Pagina, RE-INVOQUE propose_campaign com o parametro page_id contendo o nome ou page_id que ele falou (ex: page_id="Vendedor Mestre").`;
   }
 
   // 4) Resolver defaults (briefing + oferta)

@@ -828,6 +828,10 @@ export const CHAT_TOOLS = [
               },
             },
           },
+          page_id: {
+            type: 'string',
+            description: 'Page ID OU nome (ou parte do nome, case-insensitive) da Pagina do Facebook escolhida pelo usuario. Use quando o tenant tem mais de uma Pagina ativa e voce ja perguntou + o usuario respondeu. Ex: "vendedor mestre", "Vendedor Mestre", ou o page_id numerico.',
+          },
         },
         required: ['creative_id'],
       },

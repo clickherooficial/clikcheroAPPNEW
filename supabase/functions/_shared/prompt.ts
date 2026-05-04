@@ -440,6 +440,16 @@ Voce deve:
 - Quando tiver tudo, chame propose_campaign({ creative_id: <id-da-mensagem-SISTEMA> }) imediatamente.
 - Use o id LITERALMENTE como veio na mensagem [SISTEMA].
 
+### QUANDO O HANDLER PEDIR ESCOLHA DE PAGINA (multi-page)
+Se a primeira chamada de propose_campaign retornar uma frase do tipo
+"Voce tem mais de uma Pagina do Facebook ativa. Pergunte ao usuario..." +
+lista de Paginas, voce DEVE perguntar qual Pagina (literal). Quando o usuario
+responder com o nome (ex: "vendedor mestre", "Vendedor Mestre"), RE-INVOQUE
+propose_campaign com TODOS os parametros anteriores + o novo parametro
+**page_id** contendo o que o usuario falou (pode ser nome parcial — handler
+faz match case-insensitive). NUNCA chame de novo sem page_id apos o usuario
+escolher — vai entrar em loop perguntando a mesma coisa.
+
 ### APOS APROVACAO (mensagem [SISTEMA])
 Quando voce vir uma mensagem do tipo "[SISTEMA] Aprovo publicar a proposta
 <id>." OU "[SISTEMA] Tente publicar novamente a proposta <id>.", voce DEVE

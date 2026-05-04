@@ -361,10 +361,11 @@ Deno.serve(async (req) => {
     && briefing.visualIdentity.palette.length > 0;
   let resolvedModel: ProviderModel;
   if (model === 'auto') {
-    // 2026-04-28: pivotamos default pra gpt_image enquanto Nano Banana
-    // (gemini-2.5-flash-image) esta com latencia >90s. Reels 4:5 ainda usa
-    // Nano (GPT-image-1 nao tem 4:5 nativo).
-    resolvedModel = 'gpt_image';
+    // 2026-05-04: revertido pra nano_banana apos overnight test mostrar
+    // gpt-image-1 estourando timeout 55s + retries em todos os runs. Nano Banana
+    // (gemini-2.5-flash-image) volta a ser default; fallback automatico em
+    // creative-providers.ts cobre 5xx/timeout pivotando pra gpt-image-1.
+    resolvedModel = 'nano_banana';
   } else {
     resolvedModel = model;
   }

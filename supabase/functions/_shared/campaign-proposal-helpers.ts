@@ -457,7 +457,9 @@ function summarizeTone(tone: Record<string, unknown>): string {
 // ============================================================
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const COPY_MODEL = 'gpt-4o';
+// 2026-05-04: gpt-4o-mini suficiente pra geracao de copy estruturada (JSON com
+// titulos/descricoes curtas). 10x mais barato e elimina pressao na quota TPM.
+const COPY_MODEL = 'gpt-4o-mini';
 
 const CTA_BY_OBJECTIVE: Record<CampaignObjective, MetaCtaEnum> = {
   SALES: 'SHOP_NOW',

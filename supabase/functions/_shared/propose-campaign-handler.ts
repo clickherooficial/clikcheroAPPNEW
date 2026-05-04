@@ -63,7 +63,24 @@ export async function handleProposeCampaign(
   args: unknown,
   archetype: Archetype | null = null, // Task 6.3: persona Fase 2 (null = Fase 1 puro)
 ): Promise<string> {
-  // 1) Validacao do input
+  // 1) Pre-processamento: trunca strings de copy_overrides aos limites Meta.
+  // 2026-05-04: LLM (mesmo gpt-4o) gerava copy alguns chars acima do limite e
+  // ficava em loop "vou ajustar a frase pra caber". Limites sao hard cap da
+  // Meta — truncar server-side e melhor UX que rejeitar e re-invocar.
+  if (args && typeof args === 'object' && 'copy_overrides' in args) {
+    const co = (args as { copy_overrides?: Record<string, unknown> }).copy_overrides;
+    if (co && typeof co === 'object') {
+      const limits: Record<string, number> = { headline: 40, body: 125, description: 27 };
+      for (const [field, max] of Object.entries(limits)) {
+        const v = co[field];
+        if (typeof v === 'string' && v.length > max) {
+          co[field] = v.slice(0, max).trimEnd();
+        }
+      }
+    }
+  }
+
+  // 2) Validacao do input
   const parsed = InputSchema.safeParse(args);
   if (!parsed.success) {
     const fields = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');

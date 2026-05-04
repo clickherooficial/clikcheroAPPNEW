@@ -22,9 +22,13 @@ import {
 } from '../_shared/creative-tool-handlers.ts';
 import { compareCreatives, searchKnowledge } from '../_shared/data-fetchers.ts';
 
-const MODEL = 'gpt-4o';
-const COST_PER_1M_INPUT = 2.50;
-const COST_PER_1M_OUTPUT = 10.00;
+// 2026-05-04: movido pra gpt-4o-mini. Specialist compartilhava bucket de 30k TPM
+// com ai-chat (orchestrator) e estourava 429 quando user pedia criativo durante
+// conversa ja em andamento. Tool calling do specialist e estruturado/simples
+// (generate/iterate/vary/adapt/compare) — mini lida bem.
+const MODEL = 'gpt-4o-mini';
+const COST_PER_1M_INPUT = 0.15;
+const COST_PER_1M_OUTPUT = 0.60;
 
 const SPECIALIST_PROMPT = `Voce e o Creative Specialist do ClickHero — sub-agente especializado em criar e
 manipular criativos visuais (imagens) de anuncio Meta Ads usando IA.

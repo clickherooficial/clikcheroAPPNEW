@@ -469,8 +469,10 @@ Deno.serve(async (req) => {
       targeting: adsetData.targeting,
       status: campaignData.status,
       // Meta API exige bid_strategy quando adset tem budget (ABO).
-      // LOWEST_COST_WITHOUT_CAP = sem limite (Meta otimiza alcance dado o budget).
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+      // OUTCOME_TRAFFIC + LINK_CLICKS sem promoted_object requer destination_type explicito.
+      // WEBSITE = manda usuario pra link_url do creative. Funciona pra SMB sem pixel events.
+      destination_type: 'WEBSITE',
     };
     if (adsetData.daily_budget) payload.daily_budget = adsetData.daily_budget;
     if (adsetData.lifetime_budget) payload.lifetime_budget = adsetData.lifetime_budget;

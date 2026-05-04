@@ -36,3 +36,4 @@ dist-ssr
 .env.local.tmp
 .env.*.bak
 graphify-out/
+.claude/

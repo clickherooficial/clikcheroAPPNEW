@@ -240,11 +240,13 @@ const OBJECTIVE_BY_FORMAT: Record<OfferFormat, CampaignObjective> = {
   other: 'TRAFFIC',
 };
 
-// SALES: poderia ser OFFSITE_CONVERSIONS mas isso EXIGE promoted_object com pixel_id +
-// custom_event_type (ex: PURCHASE), e SMB tipicamente nao tem eventos pixel configurados.
-// LANDING_PAGE_VIEWS funciona sem pixel events e otimiza pra quem realmente carrega a pagina.
+// SALES: poderia ser OFFSITE_CONVERSIONS mas EXIGE promoted_object (pixel_id + event).
+// LANDING_PAGE_VIEWS tambem exige promoted_object (website URL) em SALES outcome.
+// LINK_CLICKS e o mais leve: nao exige nada extra, conta cliques no anuncio.
+// Trade-off: nao otimiza pra quem chega na pagina (so clica). Mas funciona pra leigo
+// sem pixel/promoted_object configurados.
 const OPTIMIZATION_BY_OBJECTIVE: Record<CampaignObjective, MetaOptimizationGoal> = {
-  SALES: 'LANDING_PAGE_VIEWS',
+  SALES: 'LINK_CLICKS',
   LEADS: 'LEAD_GENERATION',
   AWARENESS: 'REACH',
   TRAFFIC: 'LINK_CLICKS',
@@ -304,7 +306,7 @@ export const CTA_BY_ARCHETYPE: Partial<Record<Archetype, MetaCtaEnum>> = {
  */
 export const OPTIMIZATION_BY_ARCHETYPE: Partial<Record<Archetype, MetaOptimizationGoal>> = {
   small_local_business: 'REACH',
-  online_seller: 'LANDING_PAGE_VIEWS',
+  online_seller: 'LINK_CLICKS', // LANDING_PAGE_VIEWS exige promoted_object (URL); LINK_CLICKS funciona sem pixel
   service_provider: 'LEAD_GENERATION',
   info_product: 'LEAD_GENERATION',
 };
@@ -611,8 +613,13 @@ export function mapProposalToCampaignBody(
   image_url_fresh: string,
 ): CampaignPublishBody {
   // Traduz objective curto -> codigo Meta OUTCOME_*
+  // SALES mapeado pra OUTCOME_TRAFFIC porque OUTCOME_SALES exige promoted_object
+  // (pixel + custom_event_type), e SMB tipicamente nao tem pixel events configurados.
+  // Driving traffic + LANDING_PAGE_VIEWS optimization e o caminho seguro pra leigo.
+  // Quando user tem pixel ativo + pixel events trackados, propose_campaign pode passar
+  // copy_overrides com objective=OUTCOME_SALES + promoted_object explicito (futuro).
   const objectiveCodeMap: Record<CampaignObjective, CampaignPublishBody['campaign']['objective']> = {
-    SALES: 'OUTCOME_SALES',
+    SALES: 'OUTCOME_TRAFFIC',
     LEADS: 'OUTCOME_LEADS',
     AWARENESS: 'OUTCOME_AWARENESS',
     TRAFFIC: 'OUTCOME_TRAFFIC',

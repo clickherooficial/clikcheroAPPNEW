@@ -43,10 +43,10 @@ import {
 // ============================================================
 // Constantes
 // ============================================================
-// 55s deixa margem confortavel antes do corte da plataforma (~150s wall clock,
-// mas 504 EDGE_FUNCTION_ERROR ja apareceu em ~92s). Garante que sempre temos
-// tempo de logar + retornar JSON estruturado pro chat formatar a mensagem.
-const TOTAL_TIMEOUT_MS = 55_000;
+// 2026-05-04: bumpado de 55s pra 85s. story_9x16 em Nano Banana levava 30-60s
+// e qualquer hiccup estourava 55s. 85s da margem real (edge gateway corta em
+// ~92s). Se ainda estourar, e provider down de verdade, nao latencia normal.
+const TOTAL_TIMEOUT_MS = 85_000;
 const HASH_BLOCK_DISTANCE = 3;
 const HASH_NEAR_DISTANCE = 8;
 const DEDUPE_WINDOW_DAYS = 30;

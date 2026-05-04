@@ -13,8 +13,11 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemi
 const OPENAI_IMG_URL = 'https://api.openai.com/v1/images/generations';
 const OPENAI_EDIT_URL = 'https://api.openai.com/v1/images/edits';
 
-const TIMEOUT_MS = 30_000;
-const RETRY_DELAYS_MS = [1_000, 3_000, 7_000];
+// 2026-05-04: per-call timeout subiu pra 60s. Story 9x16 em Nano costuma levar
+// 30-60s em horario de pico. Retries reduzidas (so 1) — nao adianta esticar em
+// timeout normal de provider. TOTAL_TIMEOUT_MS (85s) ainda corta antes do edge.
+const TIMEOUT_MS = 60_000;
+const RETRY_DELAYS_MS = [2_000];
 
 // Pricing por imagem (USD) — abril/2026, conferir em research.md
 const NANO_BANANA_COST_USD = 0.039;

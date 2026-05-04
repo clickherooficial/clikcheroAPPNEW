@@ -84,7 +84,7 @@ function formatErrorForChat(err: ErrorResp): string {
     case 'provider_unavailable':
       return 'Provedor de imagem indisponivel no momento (OpenAI/Gemini retornou erro). Diga ao usuario LITERALMENTE: "O provedor de imagem (OpenAI/Gemini) esta indisponivel agora. Tente novamente em 1-2 minutos."';
     case 'timeout_total':
-      return 'Geracao excedeu 55s (timeout). Diga ao usuario LITERALMENTE: "A geracao da imagem demorou mais que 55s e foi cancelada. Isso geralmente acontece quando o provedor (OpenAI gpt-image / Gemini nano-banana) esta lento. Posso tentar de novo, ou voce prefere um conceito mais simples / formato menor (feed_1x1)?" — NAO diga apenas "houve um problema".';
+      return 'Geracao excedeu o timeout (provider lento). Diga ao usuario LITERALMENTE: "O gerador de imagem ta lento agora — passou do limite e foi cancelado. Quer que eu tente de novo? Se preferir, posso usar um formato mais leve (feed quadrado 1:1)." — NAO diga apenas "houve um problema".';
     case 'parent_not_found':
       return 'Criativo pai nao encontrado ou nao acessivel.';
     case 'source_not_found':

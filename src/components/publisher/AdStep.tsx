@@ -53,10 +53,10 @@ export function AdStep({ data, onChange }: Props) {
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <Label>Pagina Facebook *</Label>
+        <Label>Página Facebook *</Label>
         <Select value={data.page_id} onValueChange={(v) => set('page_id', v)}>
           <SelectTrigger>
-            <SelectValue placeholder={pages && pages.length === 0 ? 'Nenhuma pagina conectada — va em Integracoes' : 'Selecione a pagina'} />
+            <SelectValue placeholder={pages && pages.length === 0 ? 'Nenhuma página conectada — va em Integrações' : 'Selecione a página'} />
           </SelectTrigger>
           <SelectContent>
             {(pages ?? []).map((p) => (
@@ -64,26 +64,26 @@ export function AdStep({ data, onChange }: Props) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">Todos anuncios Meta precisam estar vinculados a uma pagina do Facebook.</p>
+        <p className="text-xs text-muted-foreground">Todos anúncios Meta precisam estar vinculados a uma página do Facebook.</p>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Nome Interno do Anuncio *</Label>
+        <Label>Nome Interno do Anúncio *</Label>
         <Input value={data.name} onChange={(e) => set('name', e.target.value)} maxLength={400} placeholder="Ex: Ad-001 - Imagem Black Friday" />
       </div>
 
       <div className="space-y-1.5">
         <Label>Headline * ({data.headline.length}/40)</Label>
-        <Input value={data.headline} onChange={(e) => set('headline', e.target.value)} maxLength={40} placeholder="Frase principal do anuncio" />
+        <Input value={data.headline} onChange={(e) => set('headline', e.target.value)} maxLength={40} placeholder="Frase principal do anúncio" />
       </div>
 
       <div className="space-y-1.5">
         <Label>Texto Principal * ({data.body.length}/125)</Label>
-        <Textarea value={data.body} onChange={(e) => set('body', e.target.value)} maxLength={125} rows={3} placeholder="Descricao do anuncio" />
+        <Textarea value={data.body} onChange={(e) => set('body', e.target.value)} maxLength={125} rows={3} placeholder="Descrição do anúncio" />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Descricao (opcional) ({(data.description ?? '').length}/27)</Label>
+        <Label>Descrição (opcional) ({(data.description ?? '').length}/27)</Label>
         <Input value={data.description ?? ''} onChange={(e) => set('description', e.target.value)} maxLength={27} placeholder="Texto curto complementar" />
       </div>
 
@@ -103,7 +103,7 @@ export function AdStep({ data, onChange }: Props) {
             type="url"
             value={data.link_url}
             onChange={(e) => set('link_url', e.target.value)}
-            placeholder="https://exemplo.com/promocao"
+            placeholder="https://exemplo.com/promoção"
           />
         </div>
       </div>
@@ -122,7 +122,7 @@ export function AdStep({ data, onChange }: Props) {
       </div>
 
       <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
-        🛡️ Antes da publicacao, o compliance engine analisara copy e imagem com IA pra detectar violacoes das politicas Meta.
+        🛡️ Antes da públicação, o compliance engine analisara copy e imagem com IA pra detectar violacoes das politicas Meta.
       </div>
     </div>
   );

@@ -17,7 +17,7 @@
 - [x] C1.4 — Prompt orchestrator atualizado
 - [x] C1.5 — ORCHESTRATOR_TOOLS subset criado, 5 tools criativas removidas
 - [x] C1.6 — Deploy
-- [ ] C1.7 — Smoke test manual (pendente — usuario testa)
+- [~] C1.7 — Smoke test manual — fora do closeout (decisão usuário 2026-05-02)
 - [x] C1.8 — Commit ec1890a + push 3 remotes
 
 ## Sprint C2 — Compliance Officer (CONCLUIDO 2026-04-28)
@@ -47,8 +47,8 @@
 ## Validacao geral
 
 - [x] V1 — `npm run build` verde apos cada sprint
-- [ ] V2 — Telemetria agent_runs (validar apos uso real)
-- [ ] V3 — Latencia p50 <= 12s (medir apos 10 turnos)
-- [ ] V4 — Custo <= 1.8x baseline (medir apos 1 semana)
-- [ ] V5 — Atualizar implemented-features.md
+- [~] V2 — Telemetria agent_runs — fora do closeout (validação por uso real)
+- [~] V3 — Latencia p50 — fora do closeout (validação por uso real)
+- [~] V4 — Custo baseline — fora do closeout (validação por uso real)
+- [x] V5 — Atualizar implemented-features.md (2026-05-02)
 - [x] V6 — Commit final + push 3 remotes

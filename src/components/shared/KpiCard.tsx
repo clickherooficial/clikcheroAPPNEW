@@ -29,7 +29,7 @@ export function KpiCard({
   unit,
   deltaPct,
   higherIsBetter = true,
-  hint = "vs periodo anterior",
+  hint = "vs período anterior",
   icon: Icon,
   sparklineData,
   accentClassName = "text-primary",

@@ -23,7 +23,7 @@ export default function ComplianceView() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Smart Takedown + Compliance</h1>
-              <p className="text-sm text-muted-foreground">Analise de conformidade dos anuncios via IA</p>
+              <p className="text-sm text-muted-foreground">Análise de conformidade dos anúncios via IA</p>
             </div>
           </div>
           <Button onClick={scan} disabled={isScanning}>
@@ -36,24 +36,24 @@ export default function ComplianceView() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="anuncios">Anuncios</TabsTrigger>
-            <TabsTrigger value="configuracoes">Configuracoes</TabsTrigger>
-            <TabsTrigger value="historico">Historico</TabsTrigger>
+            <TabsTrigger value="anúncios">Anúncios</TabsTrigger>
+            <TabsTrigger value="configurações">Configurações</TabsTrigger>
+            <TabsTrigger value="histórico">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="mt-4">
             <ComplianceDashboard />
           </TabsContent>
 
-          <TabsContent value="anuncios" className="mt-4">
+          <TabsContent value="anúncios" className="mt-4">
             <ComplianceTable />
           </TabsContent>
 
-          <TabsContent value="configuracoes" className="mt-4">
+          <TabsContent value="configurações" className="mt-4">
             <ComplianceSettings />
           </TabsContent>
 
-          <TabsContent value="historico" className="mt-4">
+          <TabsContent value="histórico" className="mt-4">
             <TakedownHistory />
           </TabsContent>
         </Tabs>

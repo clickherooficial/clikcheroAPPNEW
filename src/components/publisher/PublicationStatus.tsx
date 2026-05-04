@@ -7,7 +7,7 @@ const STEP_LABELS: Record<string, string> = {
   creating_campaign: 'Criando campanha...',
   creating_adset: 'Criando Ad Set...',
   creating_creative: 'Criando criativo...',
-  creating_ad: 'Criando anuncio...',
+  creating_ad: 'Criando anúncio...',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -15,7 +15,7 @@ const STATUS_LABELS: Record<string, string> = {
   compliance_check: 'Analisando compliance...',
   publishing: 'Publicando na Meta...',
   live: 'Campanha publicada!',
-  failed: 'Falha na publicacao',
+  failed: 'Falha na públicação',
 };
 
 interface Props {
@@ -51,7 +51,7 @@ export function PublicationStatus({ publicationId, onDone }: Props) {
         {/* Progress steps */}
         <div className="space-y-2">
           {[
-            { key: 'validating', label: 'Validacao Zod' },
+            { key: 'validating', label: 'Validação Zod' },
             { key: 'compliance_check', label: 'Compliance Gate' },
             { key: 'publishing', label: 'Publicando na Meta (4 passos)' },
           ].map((s) => {

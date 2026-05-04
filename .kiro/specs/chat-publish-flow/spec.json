@@ -1,0 +1,28 @@
+{
+  "feature_name": "chat-publish-flow",
+  "created_at": "2026-04-30T15:30:00Z",
+  "updated_at": "2026-05-01T11:30:00Z",
+  "language": "pt",
+  "phase": "implementation-complete",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true,
+  "implementation_progress": {
+    "completed_subtasks": 24,
+    "deferred_subtasks": 3,
+    "pending_subtasks": 1,
+    "pending_notes": "9.1 = smoke test manual happy path (Pedro); 2.3*/9.2*/9.3* = E2E Playwright opcionais pós-MVP"
+  }
+}

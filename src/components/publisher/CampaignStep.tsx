@@ -18,7 +18,7 @@ const OBJECTIVES: Record<string, string> = {
   OUTCOME_AWARENESS: 'Reconhecimento de Marca',
   OUTCOME_TRAFFIC: 'Trafego',
   OUTCOME_ENGAGEMENT: 'Engajamento',
-  OUTCOME_APP_PROMOTION: 'Promocao de App',
+  OUTCOME_APP_PROMOTION: 'Promoção de App',
 };
 
 interface Props {
@@ -35,11 +35,11 @@ export function CampaignStep({ data, onChange, adAccounts, adAccountId, onAdAcco
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <Label>Conta de Anuncios</Label>
+        <Label>Conta de Anúncios</Label>
         <Select value={adAccountId} onValueChange={onAdAccountChange}>
           <SelectTrigger><SelectValue placeholder="Selecione a ad account" /></SelectTrigger>
           <SelectContent>
-            {adAccounts.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhuma conta. Conecte em Integracoes.</div>}
+            {adAccounts.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhuma conta. Conecte em Integrações.</div>}
             {adAccounts.map((a) => (
               <SelectItem key={a.account_id} value={a.account_id}>{a.account_name ?? a.account_id}</SelectItem>
             ))}

@@ -15,6 +15,7 @@ import type { CompanyOffer, OfferFormat } from '@/types/briefing';
 
 interface StepOffersProps {
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onContinue: () => void;
   onBack: () => void;
 }
@@ -37,13 +38,17 @@ const EMPTY_DRAFT: DraftOffer = {
   is_primary: false,
 };
 
-export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
+export function StepOffers({ disabled, mode = 'wizard', onContinue, onBack }: StepOffersProps) {
   const { offers, upsertOffer, removeOffer, promoteOfferToPrimary } = useBriefing();
   const { toast } = useToast();
   const [draft, setDraft] = useState<DraftOffer>(EMPTY_DRAFT);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const hasPrimary = offers.some((o) => o.is_primary);
+  // Em settings, so abre o form quando o usuario pedir; no wizard, mantem o
+  // form aberto pra coletar a primeira oferta.
+  const formOpen = mode === 'wizard' || !hasPrimary || showAddForm || editingId !== null;
   const editingOffer = editingId ? offers.find((o) => o.id === editingId) : undefined;
   const isEditingPrimary = editingOffer?.is_primary === true;
 
@@ -62,6 +67,7 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
   const cancelEdit = () => {
     setEditingId(null);
     setDraft(EMPTY_DRAFT);
+    setShowAddForm(false);
   };
 
   const handleSave = async () => {
@@ -83,13 +89,13 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
     if (!parsed.success) {
       toast({
         title: 'Campos invalidos',
-        description: parsed.error.issues[0]?.message ?? 'Revise nome, descricao e preco',
+        description: parsed.error.issues[0]?.message ?? 'Revise nome, descrição e preço',
         variant: 'destructive',
       });
       return;
     }
     if (offers.filter((o) => !o.is_primary).length >= 10 && !editingId && !parsed.data.is_primary) {
-      toast({ title: 'Limite atingido', description: 'Maximo de 10 ofertas secundarias', variant: 'destructive' });
+      toast({ title: 'Limite atingido', description: 'Máximo de 10 ofertas secundarias', variant: 'destructive' });
       return;
     }
     const result = await upsertOffer(parsed.data);
@@ -105,7 +111,7 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
     if (!result.ok && result.error.kind === 'conflict') {
       toast({
         title: 'Promova outra oferta antes',
-        description: 'Voce nao pode remover a oferta principal sem promover outra',
+        description: 'Você não pode remover a oferta principal sem promover outra',
         variant: 'destructive',
       });
     }
@@ -116,7 +122,7 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
       <div className="space-y-2">
         {offers.length === 0 && (
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Ainda nao tem nada aqui. Comece pelo que voce mais vende.
+            Ainda não tem nada aqui. Comece pelo que você mais vende.
           </p>
         )}
         {offers.map((o) => (
@@ -153,21 +159,34 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
         ))}
       </div>
 
+      {!formOpen && (
+        <Button
+          variant="outline"
+          onClick={() => setShowAddForm(true)}
+          disabled={disabled}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Cadastrar outro produto ou serviço
+        </Button>
+      )}
+
+      {formOpen && (
       <Card className="border-dashed">
         <CardContent className="space-y-3 py-4">
           <p className="text-sm font-medium">
             {editingId
               ? 'Editar esta oferta'
               : hasPrimary
-                ? 'Cadastrar outro produto ou servico'
-                : 'Cadastrar seu principal produto ou servico'}
+                ? 'Cadastrar outro produto ou serviço'
+                : 'Cadastrar seu principal produto ou serviço'}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2 space-y-1.5">
               <Label htmlFor="offer-name">
                 {!hasPrimary || isEditingPrimary
                   ? 'Informe o nome do seu principal produto *'
-                  : 'Nome do produto ou servico *'}
+                  : 'Nome do produto ou serviço *'}
               </Label>
               <Input
                 id="offer-name"
@@ -179,8 +198,8 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="offer-price">Qual o preco de venda (mensal, total) *</Label>
-              <p className="text-xs text-muted-foreground">Pode ser valor unico ou mensalidade — o que fizer sentido pra voce.</p>
+              <Label htmlFor="offer-price">Qual o preço de venda (mensal, total) *</Label>
+              <p className="text-xs text-muted-foreground">Pode ser valor unico ou mensalidade — o que fizer sentido pra você.</p>
               <Input
                 id="offer-price"
                 value={draft.price}
@@ -191,7 +210,7 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="offer-format">Tipo do que voce vende</Label>
+              <Label htmlFor="offer-format">Tipo do que você vende</Label>
               <select
                 id="offer-format"
                 className="w-full h-10 rounded-md border border-input bg-background px-3"
@@ -200,15 +219,15 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
                 disabled={disabled}
               >
                 <option value="course">Curso</option>
-                <option value="service">Servico</option>
-                <option value="physical">Produto fisico</option>
+                <option value="service">Serviço</option>
+                <option value="physical">Produto físico</option>
                 <option value="saas">SaaS</option>
                 <option value="other">Outro</option>
               </select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="offer-desc">Descricao curta *</Label>
+            <Label htmlFor="offer-desc">Descrição curta *</Label>
             <p className="text-xs text-muted-foreground">Em poucas frases: o que a pessoa recebe ao comprar.</p>
             <Textarea
               id="offer-desc"
@@ -221,7 +240,7 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
             />
           </div>
           <div>
-            <Label htmlFor="offer-url">Link para comprar ou pagina do produto (opcional)</Label>
+            <Label htmlFor="offer-url">Link para comprar ou página do produto (opcional)</Label>
             <Input
               id="offer-url"
               value={draft.sales_url}
@@ -238,9 +257,9 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
               className="h-auto min-h-10 whitespace-normal px-4 py-2.5 inline-flex flex-wrap items-center justify-center gap-2 text-center"
             >
               <Plus className="h-4 w-4 shrink-0" />
-              <span>{editingId ? 'Salvar alteracoes' : 'Adicionar e cadastrar mais produtos'}</span>
+              <span>{editingId ? 'Salvar alteracoes' : 'Salvar e cadastrar este produto'}</span>
             </Button>
-            {editingId && (
+            {(editingId || (mode === 'settings' && showAddForm)) && (
               <Button variant="ghost" onClick={cancelEdit} disabled={disabled}>
                 Cancelar
               </Button>
@@ -248,13 +267,16 @@ export function StepOffers({ disabled, onContinue, onBack }: StepOffersProps) {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
-        <Button onClick={onContinue} disabled={!hasPrimary || disabled}>
-          Continuar
-        </Button>
-      </div>
+      {mode !== 'settings' && (
+        <div className="flex justify-between pt-4">
+          <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+          <Button onClick={onContinue} disabled={!hasPrimary || disabled}>
+            Continuar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

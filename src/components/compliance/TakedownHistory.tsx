@@ -42,7 +42,7 @@ export function TakedownHistory() {
     return (
       <Card>
         <CardContent className="p-12 text-center text-muted-foreground">
-          Nenhuma acao de takedown registrada.
+          Nenhuma ação de takedown registrada.
         </CardContent>
       </Card>
     );
@@ -54,11 +54,11 @@ export function TakedownHistory() {
         <TableHeader>
           <TableRow>
             <TableHead>Data</TableHead>
-            <TableHead>Anuncio</TableHead>
-            <TableHead>Acao</TableHead>
+            <TableHead>Anúncio</TableHead>
+            <TableHead>Ação</TableHead>
             <TableHead>Score</TableHead>
             <TableHead>Motivo</TableHead>
-            <TableHead className="w-[80px]">Acoes</TableHead>
+            <TableHead className="w-[80px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,7 +80,7 @@ export function TakedownHistory() {
                     )}
                     <div>
                       <div className="text-sm font-medium truncate max-w-[150px]">
-                        {action.creative_name ?? 'Anuncio'}
+                        {action.creative_name ?? 'Anúncio'}
                       </div>
                       <div className="text-xs text-muted-foreground">{action.external_ad_id}</div>
                     </div>
@@ -105,7 +105,7 @@ export function TakedownHistory() {
                       size="sm"
                       onClick={() => reactivate.mutate({ adId: action.external_ad_id! })}
                       disabled={reactivate.isPending}
-                      title="Reativar anuncio"
+                      title="Reativar anúncio"
                     >
                       {reactivate.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

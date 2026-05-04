@@ -29,7 +29,7 @@ function RuleList({ rules, source, canDelete, onRemove, isRemoving }: {
   return (
     <div className="space-y-1.5">
       <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        {source === 'user' ? 'Seus termos' : 'Padrao Meta (nao editavel)'}
+        {source === 'user' ? 'Seus termos' : 'Padrao Meta (não editavel)'}
       </h5>
       <div className="flex flex-wrap gap-2">
         {filtered.map((rule) => (
@@ -70,7 +70,7 @@ export function BlacklistManager() {
           Regras de Compliance
         </CardTitle>
         <CardDescription>
-          Termos proibidos e obrigatorios nos anuncios.
+          Termos proibidos e obrigatorios nos anúncios.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -96,7 +96,7 @@ export function BlacklistManager() {
               <SelectContent>
                 <SelectItem value="info">Info</SelectItem>
                 <SelectItem value="warning">Alerta</SelectItem>
-                <SelectItem value="critical">Critico</SelectItem>
+                <SelectItem value="critical">Crítico</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleAdd} disabled={!newTerm.trim() || addRule.isPending}>

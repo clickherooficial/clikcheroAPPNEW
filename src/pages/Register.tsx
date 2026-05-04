@@ -27,20 +27,20 @@ import { HexGrid } from '@/components/shared/HexGrid';
 
 const signupSchema = z
   .object({
-    displayName: z.string().min(2, 'Minimo 2 caracteres').max(80, 'Maximo 80 caracteres'),
+    displayName: z.string().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
     email: z.string().email('Email invalido'),
-    password: z.string().min(8, 'Minimo 8 caracteres'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
     confirmPassword: z.string(),
-    organizationName: z.string().min(2, 'Minimo 2 caracteres').max(100, 'Maximo 100 caracteres'),
+    organizationName: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
     slug: z
       .string()
-      .min(3, 'Minimo 3 caracteres')
-      .max(50, 'Maximo 50 caracteres')
+      .min(3, 'Mínimo 3 caracteres')
+      .max(50, 'Máximo 50 caracteres')
       .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Apenas minusculas, numeros e hifens'),
     avatarSeed: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
-    message: 'As senhas nao conferem',
+    message: 'As senhas não conferem',
     path: ['confirmPassword'],
   });
 
@@ -161,7 +161,7 @@ const Register = () => {
     } catch {
       toast({
         title: 'Erro ao criar conta',
-        description: 'Erro de conexao. Tente novamente.',
+        description: 'Erro de conexão. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -229,7 +229,7 @@ const Register = () => {
           <Progress value={(step / 3) * 100} className="h-1.5 bg-muted" />
           <div className="flex justify-between mt-2 text-[11px] text-[#ecedef]/40">
             <span className={cn(step >= 1 && 'text-[#ecedef]/80')}>Conta</span>
-            <span className={cn(step >= 2 && 'text-[#ecedef]/80')}>Organizacao</span>
+            <span className={cn(step >= 2 && 'text-[#ecedef]/80')}>Organização</span>
             <span className={cn(step >= 3 && 'text-[#ecedef]/80')}>Finalizar</span>
           </div>
         </div>
@@ -304,7 +304,7 @@ const Register = () => {
                         <FormControl>
                           <Input
                             type="password"
-                            placeholder="Minimo 8 caracteres"
+                            placeholder="Mínimo 8 caracteres"
                             autoComplete="new-password"
                             className={inputClass}
                             {...field}
@@ -363,7 +363,7 @@ const Register = () => {
                 <div className="space-y-5 fade-in">
                   <div className="text-center mb-4">
                     <h1 className="text-xl font-semibold text-[#ecedef] tracking-tight">
-                      Sua organizacao
+                      Sua organização
                     </h1>
                     <p className="text-sm text-[#ecedef]/50 mt-1.5">
                       Configure o espaco de trabalho da sua empresa
@@ -397,7 +397,7 @@ const Register = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
-                          <Link2 className="h-3.5 w-3.5" /> URL da organizacao
+                          <Link2 className="h-3.5 w-3.5" /> URL da organização
                         </FormLabel>
                         <FormControl>
                           <div className={cn('flex items-center', inputClass, 'pr-0 overflow-hidden')}>
@@ -489,7 +489,7 @@ const Register = () => {
                     <ReviewRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={values.email} />
                     <ReviewRow
                       icon={<Building2 className="h-3.5 w-3.5" />}
-                      label="Organizacao"
+                      label="Organização"
                       value={values.organizationName}
                     />
                     <ReviewRow

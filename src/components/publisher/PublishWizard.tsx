@@ -44,7 +44,7 @@ const DEFAULT_AD: AdData = {
 const STEPS = [
   { key: 'campaign', label: 'Campanha' },
   { key: 'adset', label: 'Ad Set' },
-  { key: 'ad', label: 'Anuncio' },
+  { key: 'ad', label: 'Anúncio' },
 ];
 
 export function PublishWizard({ onPublished }: { onPublished?: () => void }) {
@@ -175,7 +175,7 @@ export function PublishWizard({ onPublished }: { onPublished?: () => void }) {
         </Button>
         {step < STEPS.length - 1 ? (
           <Button onClick={() => setStep(step + 1)} disabled={!canNext()}>
-            Proximo <ChevronRight className="w-4 h-4 ml-1" />
+            Próximo <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         ) : (
           <Button onClick={() => setShowConfirm(true)} disabled={!canNext() || publish.isPending}>

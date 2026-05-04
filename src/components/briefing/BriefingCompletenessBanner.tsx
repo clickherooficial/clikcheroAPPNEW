@@ -10,10 +10,10 @@ import type { BriefingMissingField } from '@/types/briefing';
 
 const FIELD_LABELS: Record<BriefingMissingField, string> = {
   niche: 'nicho do negocio',
-  short_description: 'descricao da empresa',
+  short_description: 'descrição da empresa',
   primary_offer: 'oferta principal',
-  audience_age: 'faixa etaria do publico',
-  audience_location: 'localizacao do publico',
+  audience_age: 'faixa etaria do público',
+  audience_location: 'localização do público',
   tone_formality: 'formalidade do tom de voz',
   tone_technicality: 'tecnicidade do tom de voz',
   tone_emotional: 'tom emocional dominante',
@@ -32,7 +32,7 @@ export function BriefingCompletenessBanner() {
         <Sparkles className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between w-full gap-3">
           <span>
-            <strong>Briefing nao iniciado.</strong> Complete seu perfil de negocio — leva cerca de 5 minutos.
+            <strong>Briefing não iniciado.</strong> Complete seu perfil de negocio — leva cerca de 5 minutos.
           </span>
           <Button size="sm" onClick={() => navigate('/briefing/wizard')}>
             Comecar agora
@@ -54,7 +54,7 @@ export function BriefingCompletenessBanner() {
       <AlertDescription className="flex items-center justify-between w-full gap-3">
         <span>
           <strong>Briefing {score}% completo.</strong> Falta: {missingLabels}
-          {moreCount > 0 ? ` e mais ${moreCount}` : ''}. Geracao de criativos e publicacao de
+          {moreCount > 0 ? ` e mais ${moreCount}` : ''}. Geração de criativos e públicação de
           campanhas ficam bloqueadas ate completar.
         </span>
         <Button size="sm" variant="outline" onClick={() => navigate('/briefing')}>

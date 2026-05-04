@@ -10,15 +10,15 @@ export default function BudgetSmartView() {
             <Wallet className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Orcamento Smart</h1>
-            <p className="text-sm text-muted-foreground">A IA pensa na distribuicao do seu orcamento</p>
+            <h1 className="text-xl font-bold text-foreground">Orçamento Smart</h1>
+            <p className="text-sm text-muted-foreground">A IA pensa na distribuicao do seu orçamento</p>
           </div>
         </div>
 
         <GoalWizard />
 
         <p className="text-xs text-muted-foreground text-center pt-4">
-          Projecoes baseadas em historico. Resultados reais podem variar.
+          Projecoes baseadas em histórico. Resultados reais podem variar.
         </p>
       </div>
     </div>

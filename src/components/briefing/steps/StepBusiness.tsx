@@ -10,6 +10,7 @@ import type { CompanyBriefing } from '@/types/briefing';
 interface StepBusinessProps {
   initial: CompanyBriefing | null;
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onSubmit: (data: {
     niche: string;
     niche_category?: string;
@@ -19,7 +20,7 @@ interface StepBusinessProps {
   }) => void;
 }
 
-export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps) {
+export function StepBusiness({ initial, disabled, mode = 'wizard', onSubmit }: StepBusinessProps) {
   const [niche, setNiche] = useState(initial?.niche ?? '');
   const [category, setCategory] = useState(initial?.niche_category ?? '');
   const [description, setDescription] = useState(initial?.short_description ?? '');
@@ -50,14 +51,14 @@ export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps)
           id="category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          placeholder="Ex: Saude / Educacao / Servicos"
+          placeholder="Ex: Saúde / Educacao / Serviços"
           disabled={disabled}
           maxLength={60}
         />
       </div>
 
       <div>
-        <Label htmlFor="description">Descricao curta da empresa *</Label>
+        <Label htmlFor="description">Descrição curta da empresa *</Label>
         <Textarea
           id="description"
           value={description}
@@ -91,13 +92,13 @@ export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps)
             inputMode="url"
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
-            placeholder="@usuario ou link do perfil"
+            placeholder="@usuário ou link do perfil"
             disabled={disabled}
             autoCapitalize="off"
             autoCorrect="off"
           />
           <p className="text-xs text-muted-foreground mt-1.5 leading-snug">
-            Aceita @usuario, usuario ou URL completa; normalizamos o link automaticamente.
+            Aceita @usuário, usuário ou URL completa; normalizamos o link automaticamente.
           </p>
         </div>
         <div>
@@ -111,7 +112,7 @@ export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps)
             type="text"
             value={tiktok}
             onChange={(e) => setTiktok(e.target.value)}
-            placeholder="@usuario ou link"
+            placeholder="@usuário ou link"
             disabled={disabled}
             autoCapitalize="off"
             autoCorrect="off"
@@ -136,7 +137,7 @@ export function StepBusiness({ initial, disabled, onSubmit }: StepBusinessProps)
             })
           }
         >
-          Continuar
+          {mode === 'settings' ? 'Salvar alteracoes' : 'Continuar'}
         </Button>
       </div>
     </div>

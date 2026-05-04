@@ -27,7 +27,7 @@ export function PublicationHistory() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Publicacoes recentes</h3>
+        <h3 className="text-sm font-semibold">Públicações recentes</h3>
         <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'live' | 'failed')}>
           <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -40,7 +40,7 @@ export function PublicationHistory() {
 
       {!items || items.length === 0 ? (
         <Card><CardContent className="p-12 text-center text-muted-foreground">
-          Nenhuma publicacao ainda.
+          Nenhuma públicação ainda.
         </CardContent></Card>
       ) : (
         <div className="space-y-2">

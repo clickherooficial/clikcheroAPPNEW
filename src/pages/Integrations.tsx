@@ -58,7 +58,7 @@ const Integrations = () => {
       setTimeout(() => setShowSelector(true), 300);
     } else if (error) {
       toast({
-        title: 'Erro na conexao Meta',
+        title: 'Erro na conexão Meta',
         description: decodeURIComponent(error),
         variant: 'destructive',
       });
@@ -104,13 +104,13 @@ const Integrations = () => {
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </Link>
-        <h1 className="text-sm font-semibold text-foreground">Integracoes</h1>
+        <h1 className="text-sm font-semibold text-foreground">Integrações</h1>
       </header>
 
       <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6 xl:p-8">
         <PageHeader
-          title="Integracoes"
-          description="Conecte plataformas de anuncio para importar campanhas, metricas e insights"
+          title="Integrações"
+          description="Conecte plataformas de anúncio para importar campanhas, métricas e insights"
         />
 
         {/* Meta Ads Card */}
@@ -135,7 +135,7 @@ const Integrations = () => {
                 <div className="min-w-0">
                   <CardTitle className="text-base tracking-tight">Meta Ads</CardTitle>
                   <CardDescription className="text-[13px]">
-                    Conecte contas de anuncio do Facebook e Instagram
+                    Conecte contas de anúncio do Facebook e Instagram
                   </CardDescription>
                 </div>
               </div>
@@ -164,7 +164,7 @@ const Integrations = () => {
                   </div>
                   {integration.last_sync && (
                     <p className="border-t border-border/50 pt-3 font-mono text-[11px] tabular-nums text-muted-foreground">
-                      Ultima sync: {new Date(integration.last_sync).toLocaleString('pt-BR')}
+                      Última sync: {new Date(integration.last_sync).toLocaleString('pt-BR')}
                     </p>
                   )}
                 </div>
@@ -185,7 +185,7 @@ const Integrations = () => {
 
                 {/* Scan interval */}
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-secondary/30 p-3">
-                  <div className="text-sm text-foreground/80">Intervalo de varredura automatica</div>
+                  <div className="text-sm text-foreground/80">Intervalo de varredura automática</div>
                   <Select
                     value={String(integration?.scan_interval_hours ?? 24)}
                     onValueChange={(v) => updateScanInterval(Number(v))}
@@ -246,11 +246,11 @@ const Integrations = () => {
               <>
                 <div className="space-y-3 rounded-xl border border-dashed border-border bg-secondary/30 p-6 text-center">
                   <p className="text-sm text-foreground/80">
-                    Conecte sua conta Meta Ads para importar campanhas, metricas e insights automaticamente.
+                    Conecte sua conta Meta Ads para importar campanhas, métricas e insights automaticamente.
                   </p>
                   <ul className="flex flex-wrap justify-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     <li className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border">Campanhas</li>
-                    <li className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border">Metricas</li>
+                    <li className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border">Métricas</li>
                     <li className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border">Business Manager</li>
                     <li className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border">Criativos</li>
                   </ul>

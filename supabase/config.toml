@@ -400,3 +400,30 @@ verify_jwt = false
 
 [functions.meta-list-assets]
 verify_jwt = false
+
+# Specialists internos chamados via service-role por outras edge functions.
+# Validam o service role no proprio codigo — gateway JWT verify e redundante
+# e estava rejeitando 401 antes do codigo rodar.
+[functions.creative-specialist]
+verify_jwt = false
+
+[functions.compliance-officer]
+verify_jwt = false
+
+[functions.action-manager]
+verify_jwt = false
+
+[functions.meta-ads-specialist]
+verify_jwt = false
+
+# archetype-detector valida o auth header no proprio codigo e usa client
+# com user JWT pra reusar RLS na leitura. verify_jwt = false evita 401
+# em cenarios de fire-and-forget desde o BriefingWizard.
+[functions.archetype-detector]
+verify_jwt = false
+
+# archetype-backfill e operacional/admin: valida SERVICE_ROLE_KEY no proprio
+# codigo. verify_jwt = false porque o gateway nao reconhece service_role como
+# JWT de usuario.
+[functions.archetype-backfill]
+verify_jwt = false

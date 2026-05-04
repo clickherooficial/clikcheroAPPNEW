@@ -4,12 +4,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import type {
   BriefingError,
   CompanyBriefing,
   CompanyOffer,
   Result,
 } from '@/types/briefing';
+import type { Archetype } from '@/types/business-archetype';
 
 const BRIEFING_STALE_MS = 5 * 60 * 1000;
 
@@ -27,6 +29,7 @@ export function useBriefing() {
   const companyId = company?.id ?? null;
   const isReadOnly = role !== 'owner' && role !== 'admin';
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const briefingQuery = useQuery({
     queryKey: ['briefing', companyId],
@@ -37,7 +40,7 @@ export function useBriefing() {
       const { data, error } = await supabase
         .from('company_briefings' as never)
         .select(
-          'company_id, niche, niche_category, short_description, website_url, social_links, audience, tone, palette, status, created_at, updated_at',
+          'company_id, niche, niche_category, short_description, website_url, social_links, audience, tone, palette, status, business_archetype, created_at, updated_at',
         )
         .eq('company_id', companyId)
         .maybeSingle();
@@ -148,6 +151,34 @@ export function useBriefing() {
     onSuccess: invalidateAll,
   });
 
+  // Task 7.1 (business-archetype-personas): mutation pra setar archetype manualmente do Settings.
+  const updateArchetypeMutation = useMutation({
+    mutationFn: async (value: Archetype | null) => {
+      if (!companyId) throw new Error('Empresa nao identificada');
+      if (isReadOnly) throw new Error('Sem permissao para editar');
+      const { error } = await supabase
+        .from('company_briefings' as never)
+        .update({ business_archetype: value } as never)
+        .eq('company_id', companyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['briefing', companyId] });
+      toast({
+        title: 'Arquetipo atualizado',
+        description: 'Suas sugestoes foram personalizadas.',
+      });
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast({
+        title: 'Erro ao atualizar',
+        description: message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     briefing: briefingQuery.data ?? null,
     offers: offersQuery.data ?? [],
@@ -159,5 +190,7 @@ export function useBriefing() {
     upsertOffer: upsertOfferMutation.mutateAsync,
     removeOffer: removeOfferMutation.mutateAsync,
     promoteOfferToPrimary: promotePrimaryMutation.mutateAsync,
+    updateArchetype: updateArchetypeMutation.mutate,
+    isUpdatingArchetype: updateArchetypeMutation.isPending,
   };
 }

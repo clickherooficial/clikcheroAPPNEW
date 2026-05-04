@@ -16,10 +16,10 @@ export function FuryDashboard() {
   }
 
   const cards = [
-    { title: 'Acoes Hoje', value: stats?.actionsToday ?? 0, icon: Zap, color: 'text-amber-400' },
+    { title: 'Ações Hoje', value: stats?.actionsToday ?? 0, icon: Zap, color: 'text-amber-400' },
     { title: 'Alertas Pendentes', value: stats?.pendingAlerts ?? 0, icon: AlertTriangle, color: 'text-orange-400' },
     { title: 'Campanhas Avaliadas', value: stats?.campaignsEvaluated ?? 0, icon: BarChart3, color: 'text-blue-400' },
-    { title: 'Acoes Executadas', value: stats?.actionsExecuted ?? 0, icon: Play, color: 'text-emerald-400' },
+    { title: 'Ações Executadas', value: stats?.actionsExecuted ?? 0, icon: Play, color: 'text-emerald-400' },
   ];
 
   return (

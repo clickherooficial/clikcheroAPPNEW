@@ -18,11 +18,12 @@ import {
 interface Props {
   initial: PaletteData;
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onSubmit: (palette: PaletteData) => void;
   onBack: () => void;
 }
 
-export function StepVisuals({ initial, disabled, onSubmit, onBack }: Props) {
+export function StepVisuals({ initial, disabled, mode = 'wizard', onSubmit, onBack }: Props) {
   const { toast } = useToast();
   const { assets, upload, remove } = useBriefingAssets();
   const [busy, setBusy] = useState(false);
@@ -44,9 +45,9 @@ export function StepVisuals({ initial, disabled, onSubmit, onBack }: Props) {
         result.error.kind === 'too_large'
           ? `Arquivo maior que ${(BRIEFING_ASSET_MAX_BYTES / 1024 / 1024).toFixed(0)}MB`
           : result.error.kind === 'unsupported_mime'
-          ? 'Formato nao suportado (use png, jpg, webp ou svg)'
+          ? 'Formato não suportado (use png, jpg, webp ou svg)'
           : result.error.kind === 'mood_board_limit_reached'
-          ? `Limite de ${MOOD_BOARD_MAX_ITEMS} imagens de referencia`
+          ? `Limite de ${MOOD_BOARD_MAX_ITEMS} imagens de referência`
           : 'Erro ao enviar arquivo';
       toast({ title: 'Upload falhou', description: msg, variant: 'destructive' });
     }
@@ -82,8 +83,8 @@ export function StepVisuals({ initial, disabled, onSubmit, onBack }: Props) {
       </div>
 
       <div>
-        <Label className="mb-1 block">Imagens de referencia ({moodBoard.length}/{MOOD_BOARD_MAX_ITEMS})</Label>
-        <p className="text-xs text-muted-foreground mb-2">Anuncios, posts ou fotos que mostram o clima visual que voce quer para a marca.</p>
+        <Label className="mb-1 block">Imagens de referência ({moodBoard.length}/{MOOD_BOARD_MAX_ITEMS})</Label>
+        <p className="text-xs text-muted-foreground mb-2">Anúncios, posts ou fotos que mostram o clima visual que você quer para a marca.</p>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {moodBoard.map((m) => (
             <div key={m.id} className="relative aspect-square rounded-md overflow-hidden border bg-muted">
@@ -108,13 +109,15 @@ export function StepVisuals({ initial, disabled, onSubmit, onBack }: Props) {
         </div>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={disabled || busy}>Voltar</Button>
+      <div className={mode === 'settings' ? 'flex justify-end pt-4' : 'flex justify-between pt-4'}>
+        {mode !== 'settings' && (
+          <Button variant="ghost" onClick={onBack} disabled={disabled || busy}>Voltar</Button>
+        )}
         <Button
           disabled={disabled || busy}
           onClick={() => onSubmit({ primary, secondary, accent, background })}
         >
-          Continuar
+          {mode === 'settings' ? 'Salvar alteracoes' : 'Continuar'}
         </Button>
       </div>
     </div>

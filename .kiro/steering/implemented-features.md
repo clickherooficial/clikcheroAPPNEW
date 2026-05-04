@@ -1,12 +1,569 @@
 # Implemented Features (Steering — As-Built State)
 
-> Atualizado: 2026-04-27
+> Atualizado: 2026-05-03
 > Este documento reflete o estado REAL do projeto. Sempre que uma feature for completada, atualize aqui.
 
-## Fury Learning v1 (2026-04-27)
+## agency-mode — Sprint 8/8 (2026-05-03) — ROADMAP COMPLETE
+
+> Spec: `.kiro/specs/agency-mode/`
+> Status: code SHIPPED. **Roadmap "agente de trafego completo" 8/8 sprints fechado.**
+
+### Migration nova
+- `supabase/migrations/20260504000006_companies_preferred_ad_account.sql` — adiciona `companies.preferred_ad_account_external_id text NULL`
+
+### Edge helper patch
+- `_shared/meta-edits-helpers.ts` `resolveMetaContext` — agora respeita preferencia da company; fallback gracioso pra primeira ad_account se preferida nao existe ou nao foi setada
+
+### Tools no chat (2)
+- `get_ad_accounts` — lista contas + indica preferida com ⭐
+- `set_preferred_ad_account` — muda preferencia; afeta TODAS Edge Fns futuras dessa company
+- Handlers em `_shared/agency-handlers.ts`
+
+### Frontend
+- `src/hooks/use-ad-accounts.ts` — `useAdAccounts` + `useSetPreferredAdAccount` (invalida campaigns/adsets/audiences/catalogs/ab-tests ao trocar)
+- `src/components/auth/AdAccountSwitcher.tsx` — dropdown no header (escondido se 1 conta)
+- Wire em Index.tsx header (ao lado do ThemeToggle)
+
+### Decisoes
+- **String column em vez de FK** — meta_ad_accounts pode rotacionar via sync
+- **Switcher escondido se 1 conta** — UX limpa pra single-tenant; visivel pra agency
+- **Fallback gracioso** — se preferida some, volta pra primeira
+- **Invalidacao agressiva ao trocar** — todas queries dependentes invalidadas
+
+### Pendente
+- Apply migration `20260504000006`
+- Smoke E2E (account com 2+ ad_accounts: trocar e ver dados de campaign mudarem)
+
+---
+
+## ab-testing — Sprint 7/8 (2026-05-03)
+
+> Spec: `.kiro/specs/ab-testing/`
+> Status: code SHIPPED, build verde.
+> MVP: track + evaluate manual. Sem auto-duplicate (usuario cria variante via update_campaign).
+
+### Migration nova
+- `supabase/migrations/20260504000005_ab_tests.sql`
+- Tabela `ab_tests` com 2 variantes (kind + external_id + label), criterion (ctr/cpl/roas/conversions/spend_efficiency), winner_variant, evaluation_summary jsonb
+- RLS scoped por current_organization_id
+- UNIQUE(company_id, variant_a_external_id, variant_b_external_id)
+
+### Edge Function nova
+- `ab-test-evaluate` — carrega metricas (campaign_metrics ou adset_metrics), calcula rate por criterion, decide vencedor:
+  - Sample minimo: 100 cliques pra CTR, 30 conversoes pra resto
+  - Threshold heuristico: 10% diff = empate
+  - Se amostra insuficiente: 'inconclusive'
+  - Sumário inteiro vai pra evaluation_summary jsonb pra UI
+
+### Tools no chat (3)
+- `start_ab_test` — registra par + criterion (sem duplicar nada)
+- `get_ab_tests` — lista 20 ultimos
+- `evaluate_ab_test` — invoca Edge Fn
+- Handlers em `_shared/ab-test-handlers.ts`
+
+### Frontend
+- `src/types/ab-tests.ts`
+- `src/hooks/use-ab-tests.ts` — `useABTests`, `useStartABTest`, `useEvaluateABTest`, `useEndABTest`
+- `src/components/ab-testing/ABTestCard.tsx` — side-by-side com 2 colunas + badge de vencedor + botoes Avaliar/Encerrar
+- `src/components/ABTestsView.tsx` — Em andamento / Encerrados + dialog de criar
+- Sidebar item "A/B Tests" (icone GitBranch)
+
+### Decisoes
+- **Heuristica simples (10% diff + sample minimo)** — nao Bayesian rigoroso; honesto sobre confianca limitada
+- **Sem duplicate automatico** — usuario cria 2a variante manualmente via update_campaign + new name; mais flexivel e evita lock-in
+- **CPL: menor e melhor** — codigo trata invertido vs CTR/ROAS/conversions/efficiency
+
+### Pendente
+- Apply migration `20260504000005`
+- Deploy `ab-test-evaluate`
+- Smoke E2E (criar 2 campanhas variantes, registrar test, aguardar amostra, evaluate)
+
+---
+
+## catalog-management — Sprint 6/8 (2026-05-03)
+
+> Spec: `.kiro/specs/catalog-management/`
+> Status: code SHIPPED (overnight fast-track), build verde. MVP read-only.
+> Pendentes: apply migration, deploy Edge Fn, smoke E2E.
+
+### Migration nova
+- `supabase/migrations/20260504000004_product_catalogs.sql`
+- Tabela `product_catalogs` (cache de Meta Business catalogs) + `product_sets` (subsets por filter)
+- RLS scoped por current_organization_id
+- Indexes em (company_id, catalog_id)
+
+### Edge Function nova
+- `meta-sync-catalogs` — pagina /me/businesses → /{biz_id}/owned_product_catalogs → /{catalog_id}/product_sets; upserta tudo em local
+
+### Tool nova
+- `list_catalogs` — read-only do cache local; retorna texto formatado pro LLM com catalogs + sets + ids
+- Handler em `_shared/catalogs-handler.ts`
+
+### Frontend
+- `src/types/catalogs.ts` — `ProductCatalog`, `ProductSet`
+- `src/hooks/use-catalogs.ts` — `useCatalogs` (joina catalogs + sets), `useSyncCatalogs`
+- `src/components/CatalogsView.tsx` — lista com expand de sets, botao sincronizar
+
+### Sidebar
+- Item "Catálogos" (icone `Package`) em secondaryItems
+- Wire em Index.tsx
+
+### Decisoes
+- **MVP read-only** — produtos individuais sao milhares; nao replicamos localmente. Catalog/set metadata so.
+- **CRUD de catalog/set fora de scope** — usuario gerencia via Commerce Manager Meta; agente apenas REFERENCIA
+- **`list_catalogs` retorna texto formatado** em vez de JSON estruturado — LLM consume melhor; e read-only entao nao precisa de struct
+
+### Pendente
+- Apply migration `20260504000004`
+- Deploy `meta-sync-catalogs`
+- Smoke E2E (sincronizar catalogs de uma conta com Business Manager configurado)
+- v2 (futuro): criar product_set custom via filter UI; tool `create_product_set`
+
+---
+
+## agent-execution-loop — Sprint 5/8 (2026-05-03)
+
+> Spec: `.kiro/specs/agent-execution-loop/`
+> Status: code SHIPPED (overnight fast-track), build verde.
+> Pendentes manuais: apply migration, deploy 1 Edge Fn, smoke E2E, rollback automatico (proxima iteracao).
+
+### Migration nova
+- `supabase/migrations/20260504000003_plan_execution.sql`
+- Adiciona em `plans`: `executed_steps_count int`, `failed_at_step int`, `ledger_ids text[]`, `started_at timestamptz`
+- Expande status check pra incluir `running`, `rolled_back`, `aborted`
+
+### Edge Function nova
+- `agent-plan-execute` — executa plan APPROVED sequencialmente:
+  - Lock atomico approved->running (CAS via update WHERE status='approved')
+  - Para cada approval (plan_step_order ASC): mapeia action_type pra Edge Fn alvo, invoca via fetch HTTP com user JWT, captura ledger_id
+  - Para no primeiro fail/blocked
+  - Status final: executed (todos OK) | partial (alguns OK + fail) | failed (zero OK)
+  - Adapter para action_types legados (action-manager) e novos (Sprints 2-4)
+
+### Helper Edge Function
+- `_shared/plan-execute-handler.ts` — handler do tool execute_plan (HTTP fetch)
+
+### Tools no chat (1 nova)
+- `execute_plan(plan_id)` — chamavel APENAS apos usuario aprovar via UI; Edge Fn rejeita com `plan_not_in_approved_state` se chamado antes
+- Schema em `_shared/tools.ts`
+- Dispatcher case em `ai-chat/index.ts`
+- SYSTEM_PROMPT com secao "EXECUCAO DE PLANS" + regras (nunca chamar antes de aprovacao)
+
+### Action_type → Edge Fn mapping
+- Legado (action-manager): pause_campaign, reactivate_campaign, pause_ad, reactivate_ad, update_budget
+- Sprint 2: update_campaign, update_adset, update_ad, shift_budget, change_schedule
+- Sprint 3: create_customer_list_audience, create_lookalike_audience, update_audience, delete_audience
+- Sprint 4: create_pixel_audience, create_engagement_audience (kind discriminator injetado)
+
+### Frontend
+- `src/types/plans.ts` — `PlanStatus` (10 valores), `PlanRow`, `PlanStepRow`
+- `src/hooks/use-plans.ts` (estendido) — adicionados `executeNow(planId)` e `abort(planId)` ao hook existente
+- `src/components/plans/PlanCard.tsx` — card com status badge, progress bar (executed/total), expand pra ver steps + ledger_ids count
+- `src/components/PlansView.tsx` — 3 secoes: Pronto pra executar (approved/running) / Aguardando aprovacao (pending) / Histórico (executed/partial/failed/etc)
+
+### Sidebar
+- Item "Planos" (icone `ListChecks`) em secondaryItems
+- Wire em Index.tsx
+
+### Decisoes
+- **Sequencial, para no primeiro fail** — planos sao geralmente inter-dependentes; partial state melhor que tentar pegar tudo
+- **Captura ledger_ids[] mas nao faz rollback inline** — rollback exige logica per-action_type (reverter pause -> reactivate, etc); deferido
+- **Lock atomico via UPDATE WHERE status='approved'** — previne double-execute concorrente
+- **Realtime via supabase channel** — UI (PlansView) atualiza sem polling quando status muda
+- **Tool `execute_plan` only after approval** — Edge Fn enforça via WHERE status='approved'; LLM-side prompt reforca
+
+### Pendente
+- Apply migration `20260504000003`
+- Deploy `agent-plan-execute` via CLI
+- Captain America review (lock atomico, status transitions)
+- Hulk smoke (criar plan 3 steps, aprovar, executar, ver ledger_ids[])
+- **Sprint dedicada futura**: rollback automatico baseado em ledger_ids[] (reverte updates/pauses/budgets atraves do payload original armazenado)
+
+---
+
+## pixel-engagement-audiences — Sprint 4/8 (2026-05-03)
+
+> Spec: `.kiro/specs/pixel-engagement-audiences/`
+> Status: code SHIPPED (overnight fast-track), build verde.
+> Pendentes manuais: apply migration, deploy 2 Edge Fns, smoke E2E.
+> Bloqueado por: audience-management (Sprint 3) deployado.
+
+### Migration nova
+- `supabase/migrations/20260504000002_audience_sources_cache.sql`
+- Tabela `meta_audience_sources_cache` (kind ∈ {pixel,page,ig_business,video,lead_form}, RLS via current_organization_id, UNIQUE(company_id, kind, external_id))
+
+### Helper Edge Function
+- `supabase/functions/_shared/audience-rule-builder.ts`:
+  - `buildPixelRule({pixel_id, event, url_contains?, retention_days, exclude_event?})` — gera jsonb com inclusions + exclusions opcional
+  - `buildEngagementRule({source_kind, source_id, template, retention_days})` — 12 templates (page/IG/video/lead_form/event)
+  - Mapeamento `KIND_TO_SOURCE_TYPE` cobre traducao Meta-spec (lead_form -> 'leadgen_form')
+
+### Edge Functions novas (2)
+- `meta-list-audience-sources` — busca pixels (/act_{id}/adspixels), pages (/me/accounts), IG (via pages), videos recentes (50 do primeiro page), lead_forms; upserta tudo em meta_audience_sources_cache
+- `meta-audience-create-rule` — discriminated union {kind:'pixel'|'engagement'} com Zod, single Edge Fn handle ambos via withSafetyRails
+
+### Tools no chat (2 novas)
+- `create_pixel_audience`, `create_engagement_audience`
+- Schemas em `_shared/tools.ts`
+- Handlers em `audience-tool-handlers.ts` (kind injetado pelo handler)
+- Dispatcher cases em `ai-chat/index.ts`
+- SYSTEM_PROMPT com secao "AUDIENCIAS PIXEL/ENGAGEMENT" + receitas (carrinho abandonado, viewers de video)
+
+### Frontend
+- `src/types/pixel-audiences.ts` — `PixelEvent`, `EngagementSourceKind`, `EngagementTemplate`, 2 payload types, `AudienceSourceCacheRow`
+- `src/hooks/use-audience-sources.ts` — `useAudienceSources` (query), `useRefreshAudienceSources` (mutation), `useCreatePixelAudience`, `useCreateEngagementAudience`
+- `src/components/audiences/PixelRuleBuilder.tsx` — pixel select (com last_fired_time hint) + event combo + url_contains + retention slider + toggle "excluir compradores"
+- `src/components/audiences/EngagementPicker.tsx` — kind radio (Page/IG/Video/Lead Form/Evento) + source select dinamico + template combo dependente da kind + retention
+- `src/components/audiences/CreateAudienceDialog.tsx` — Tabs agora tem 4 abas ativas (Custom / Pixel / Engagement / Lookalike) — placeholder "Sprint 4" removido
+
+### Decisoes
+- **Single Edge Fn pra pixel + engagement** — discriminated union evita duplicar safety rails wrap; rule jsonb e shape distinto mas action_kind diferenciado pra ledger
+- **Cache 1h em meta_audience_sources_cache** — Graph API rate-limited; refresh manual via UI
+- **Eventos hardcoded no Zod schema da tool** — lista finita oficial Meta; melhor que aceitar string aberta (LLM as vezes inventa eventos)
+- **Templates engagement parametrizados no nome** (`video_viewers_75_pct`) — evita {template, percent} pair no schema, simplifica LLM payload
+- **Out of scope (futuro)**: app events, cross-pixel audiences, dynamic audiences (Meta nao expoe API publica)
+
+### Pendente
+- Aplicar migration `20260504000002` via Dashboard
+- Deploy `meta-list-audience-sources` + `meta-audience-create-rule` via CLI
+- Captain America review (RLS na cache table, payload Zod cobre edge cases)
+- Hulk smoke E2E (sync sources → criar pixel audience → criar engagement audience)
+
+---
+
+## audience-management — Sprint 3/8 (2026-05-03)
+
+> Spec: `.kiro/specs/audience-management/`
+> Status: code SHIPPED (overnight fast-track), build verde, tests sha256 11/11.
+> Pendentes manuais: apply migration, deploy 5 Edge Fns, Captain review, Hulk smoke E2E.
+> Bloqueado por: agent-safety-rails (Sprint 1) + meta-edits-suite (Sprint 2) deployados.
+
+### Migration nova
+- `supabase/migrations/20260504000001_audience_management.sql`
+- Tabela `meta_audiences` (company-scoped, UNIQUE(company_id, external_id), self-FK parent_audience_id, RLS via current_organization_id)
+- View `meta_audience_usage` cruza meta_audiences x adsets.targeting jsonb
+- RPC `audience_in_active_use(uuid) -> boolean` (SECURITY INVOKER)
+
+### Helpers Edge Function novos
+- `supabase/functions/_shared/audience-helpers.ts`:
+  - `fetchAudiencePages(adAccountId, token)` — paginacao com 200ms entre paginas
+  - `uploadUsersInBatches(externalId, payload, token)` — batches de 10000 (limite Meta)
+  - `resolveAudienceExternal(supabaseAdmin, companyId, audienceId?, externalId?)` — guard cross-tenant
+  - `validateLookalikeOrigin(row)` — exige >=100 pessoas
+- `supabase/functions/_shared/audience-tool-handlers.ts` — 4 handlers HTTP pra dispatcher do chat
+
+### Edge Functions novas (5)
+- `meta-sync-audiences` — pagina /act_{id}/customaudiences e upserta local (idempotente)
+- `meta-audience-create` — cria Custom + upload em batches; PII Zod regex /^[a-f0-9]{64}$/ rejeita texto claro
+- `meta-audience-lookalike` — cria LAL apos validar origin >=100; armazena parent_audience_id
+- `meta-audience-update` — name/description/retention_days
+- `meta-audience-delete` — bloqueia cross-tenant + in_active_use + exige confirm=true
+
+Todas wrap em `withSafetyRails` (Sprint 1) com action_kinds: `create_audience`, `create_lookalike`, `update_audience`, `delete_audience`.
+
+### Estensao em meta-update-adset (Sprint 2)
+- `targeting_patch.custom_audiences` e `targeting_patch.excluded_custom_audiences` agora aceitam `[{id: string}]` onde id pode ser uuid local OU external Meta
+- Resolver: regex UUID + lookup em meta_audiences (com check company_id) -> troca por `{id: external_id}` antes de mandar pro Meta
+- Anti cross-tenant: lanca `audience_not_found_or_cross_tenant` se uuid pertence a outra company
+
+### Tools no chat (4 novas)
+- `create_customer_list_audience`, `create_lookalike_audience`, `update_audience`, `delete_audience`
+- Schemas em `_shared/tools.ts` (CHAT_TOOLS)
+- Dispatcher em `ai-chat/index.ts` `executeTool`
+- SYSTEM_PROMPT com secao "AUDIENCIAS" — exemplos negativos: nao mandar PII em texto claro, nao usar update pra trocar lista, exigir confirmacao explicita pra delete
+
+### Frontend
+- `src/types/audiences.ts` — `MetaAudience`, `AudienceSubtype`, `LookalikeRatio`, 4 payload types, `AudienceError`
+- `src/lib/sha256.ts` — `sha256Hex`, `normalizeForMeta` (Meta-spec: lowercase email, digits-only phone, etc), `hashRow`, `hashRows` (WebCrypto)
+- `src/hooks/use-audiences.ts` — 6 hooks: useAudiences, useAudienceUsage, useSyncAudiences, useCreateCustomerListAudience (faz hash AQUI), useCreateLookalike, useUpdateAudience, useDeleteAudience
+- `src/components/audiences/AudienceListRow.tsx` — row tabela com subtype icon, contagem normalizada, delivery_status badge
+- `src/components/audiences/CSVDropzone.tsx` — drag-and-drop, parser CSV, mapeamento de schema por coluna, preview 5 linhas, limite 1MB
+- `src/components/audiences/LookalikePicker.tsx` — selecao de origem (filtra Custom + count >=100) + ratio (1/2/5/10%) + country
+- `src/components/audiences/DeleteAudienceConfirm.tsx` — AlertDialog que mostra adsets em uso ATIVO antes de permitir
+- `src/components/audiences/CreateAudienceDialog.tsx` — Tabs: Custom / Pixel (locked, Sprint 4) / Lookalike
+- `src/components/AudiencesView.tsx` — composer com sync/criar + edit dialog inline
+
+### Sidebar
+- Item "Audiências" (icone `Users`) em secondaryItems do AppSidebar
+- Wire em Index.tsx — view union + viewTitles + VALID_VIEWS + switch render
+
+### Tests
+- `src/test/audiences/sha256.test.ts` — 11 tests verde:
+  - normalizeForMeta cobre EMAIL/PHONE/FN/LN/GEN/DOBY/COUNTRY
+  - sha256Hex bate com fixture conhecida ("hello" -> 2cf24dba...)
+  - hashRow rejeita cardinality mismatch
+  - hash estavel pra inputs equivalentes apos normalizacao
+
+### Decisoes
+- **PII hashada SHA256 client-side via WebCrypto** — server NUNCA recebe email/phone em texto claro (Zod regex rejeita)
+- **`parent_audience_id` self-FK ON DELETE SET NULL** — guarda lineage Custom->LAL sem bloquear delete da origem
+- **View `meta_audience_usage` em vez de tabela junction** — targeting jsonb ja vive em adsets, evita duplicar
+- **Delete em 2 camadas**: confirm=true + audience_in_active_use === false; primeira camada protege LLM acidental, segunda protege adset rodando
+- **Out of scope (Sprint 4)**: Pixel rule builder + Engagement audiences (UI complexa)
+
+### Pendente
+- Aplicar migration `20260504000001` via Dashboard
+- Deploy 5 Edge Fns via CLI (`SUPABASE_ACCESS_TOKEN=<...> npx supabase functions deploy <fn> --project-ref ckxewdahdiambbxmqxgb`)
+- Captain America review (RLS, PII isolation, cross-tenant on delete)
+- Hulk smoke E2E (sync, criar Custom + LAL, deletar)
+- payload-validation.test.ts (Edge Fn Zod schemas — Deno-only, deferido)
+
+---
+
+## meta-edits-suite — Sprint 2/8 (2026-05-03)
+
+> Spec: `.kiro/specs/meta-edits-suite/`
+> Status: code SHIPPED, deploy + apply de migration pendente (Hulk valida no Dashboard).
+> Bloqueado por: agent-safety-rails (Sprint 1) — todas as Edge Fns usam `withSafetyRails`.
+
+### Migration nova
+- `supabase/migrations/20260503000002_meta_edits_columns.sql`
+- Adiciona `local_updated_at timestamptz` em `campaigns` e `adsets`
+- View `v_editable_campaigns` (excluindo DELETED/ARCHIVED, com adset_count)
+- RPC `estimate_budget_change_impact(p_campaign_id uuid, p_new_daily_budget numeric)` retorna jsonb {current_daily, new_daily, delta_brl, delta_pct, projection_30d_brl}
+
+### Helper Edge Function compartilhado
+- `supabase/functions/_shared/meta-edits-helpers.ts`
+- `resolveMetaContext(req, supabaseAdmin)` — JWT -> {companyId, userId, metaToken, adAccountId}
+- `metaPatch(externalId, fields, token)` — POST graph.facebook.com/v22.0/{id} com fields URL-encoded
+- `metaGet(externalId, fields, token)` — GET para drift check
+- `preflightDriftCheck(externalId, fieldsToCheck, localState, token)` — compara estado local vs Meta antes de PATCH
+- `MetaApiError` class — distingue erros graph vs erros locais
+- `fireBackgroundSync(supabaseAdmin, companyId, scope, externalId)` — best-effort meta-deep-scan
+
+### Edge Functions novas (5)
+- `meta-update-campaign` — daily/lifetime budget, status, name, bid_strategy, bid_amount, schedule
+- `meta-update-adset` — idem + optimization_goal + targeting_patch (shallow merge)
+- `meta-update-ad` — status, name, troca de creative (creative_id Meta)
+- `meta-shift-budget` — move R$X de uma entidade pra outra; rollback automatico se step 2 falhar
+- `meta-change-schedule` — start/stop/end_time + dayparting (apenas adset com lifetime_budget)
+
+Todas as Edge Fns:
+- Usam `withSafetyRails` (sandbox / rate limit / circuit breaker / approval threshold)
+- Validam payload com Zod
+- Pre-flight drift check (skipavel via `force=true`)
+- Convertem BRL <-> centavos so na borda Meta API
+- Disparam `fireBackgroundSync` apos sucesso
+- Atualizam `local_updated_at` no DB local
+
+### Tools no chat (5 novas)
+- `update_campaign`, `update_adset`, `update_ad`, `shift_budget`, `change_schedule`
+- Schemas em `_shared/tools.ts` (CHAT_TOOLS)
+- Handlers em `_shared/edits-tool-handlers.ts` (POST HTTP pra Edge Fns com user JWT)
+- Dispatcher em `ai-chat/index.ts` `executeTool` switch
+- SYSTEM_PROMPT em `_shared/prompt.ts` com secao "OTIMIZACAO DE CAMPANHA" + exemplos negativos
+
+### Frontend
+- `src/types/meta-edits.ts` — `BidStrategy`, `AdsetOptimizationGoal`, 5 payload types, `MetaEditError`, `BudgetImpactEstimate`
+- `src/hooks/use-meta-edits.ts` — `useUpdateCampaign`, `useUpdateAdset`, `useUpdateAd`, `useShiftBudget`, `useChangeSchedule`, `useEditableCampaigns`, `useBudgetImpact`
+- `src/components/optimization/CampaignEditPanel.tsx` — 4 sub-secoes (status/budget/bid/schedule) com inline-edit
+- `src/components/optimization/AdsetEditPanel.tsx` — name/status/budget/optimization_goal
+- `src/components/optimization/AdEditPanel.tsx` — name/status/creative
+- `src/components/optimization/BudgetShiftDialog.tsx` — dialog pra mover budget entre 2 campanhas
+- `src/components/optimization/ImpactPreviewBadge.tsx` — preview delta% + 30d projection consultando RPC
+- `src/components/OptimizationView.tsx` — lista v_editable_campaigns + click expand panel + botao realocar
+
+### Sidebar
+- Item "Otimização" (icone `Sliders`) entre "Publicar campanha" e "Segurança do agente"
+- Wire em `src/pages/Index.tsx` — view union, viewTitles, VALID_VIEWS, switch render
+
+### Decisoes
+- DB local em BRL (consistencia com dashboard); centavos so na borda Meta API
+- `local_updated_at` separado de `updated_at` pra detectar concorrencia (sync vs nossa edicao)
+- Sem tabela `ad_edits_history` — `agent_action_ledger` ja registra (query: `WHERE action_kind LIKE 'update_%'`)
+- `triggered_by` discriminado: 'user' (UI direto), 'agent' (chat), 'rule' (Fury), 'plan' (multi-step)
+- `force=true` skipa drift check — use case: agente sabendo que esta corrigindo o que usuario fez
+
+### Pendente
+- Aplicar migration via Dashboard
+- Deploy 5 Edge Fns via CLI (ver Pattern em CLAUDE.md "Deploy Edge Functions via CLI")
+- Tests unit (Zod schemas)
+- SQL test drift detection
+- E2E manual: editar 1 campaign budget no painel, ver mutation -> ledger -> meta-sync confirma
+- Captain America review (RLS preservada via user JWT na Edge Fn, tokens nao logam)
+- Hulk smoke (3 cenarios: edit budget user / shift between campaigns / drift detection)
+
+---
+
+## agent-safety-rails — Sprint 1/8 (2026-05-03)
+
+> Spec: `.kiro/specs/agent-safety-rails/`
+> Pre-requisito de meta-edits-suite (Sprint 2) e de qualquer auto-execucao futura.
+> Status: foundation SHIPPED — wrap das Edge Fns existentes deferido pra sub-PRs (cada Edge Fn pede review individual do pipeline).
+
+Trilhos de seguranca pre-execucao pra TODA acao externa do agente. 6 mecanismos de protecao + ledger imutavel + UI de configuracao.
+
+### Migration nova
+- `20260503000001_agent_safety_rails.sql` — 2 tabelas + 3 RPCs + 2 triggers
+  - `agent_safety_config` (1 linha por company, defaults conservadores: sandbox ON, auto_execute OFF, 10 acoes/h, 50/dia, 30%/24h aumento gasto, breaker em 3 falhas)
+  - `agent_action_ledger` (append-only — INSERT/UPDATE/DELETE bloqueados pra usuarios via RLS; service-role insere)
+  - RPC `check_safety_gates(company_id, agent_name, action_kind, cost_brl_estimate?)` SECURITY DEFINER — retorna `{allowed, sandbox?, block_reason?, ...}` com 5 verificacoes em ordem: paused -> rate_limit_1h -> rate_limit_24h -> spend_velocity -> requires_approval
+  - RPC `log_agent_action(...)` SECURITY DEFINER — insert idempotente (ON CONFLICT idempotency_key)
+  - RPC `get_safety_status(company_id?)` SECURITY INVOKER — snapshot pra UI: config + counters + breaker state + top_block_reasons_7d
+  - Trigger `init_safety_config_for_company` AFTER INSERT em companies — cria row default
+  - Trigger `check_circuit_breaker_after_insert` AFTER INSERT em ledger — quando 3 status='failed' consecutivos, UPDATE paused_until+cooldown+reason
+  - Backfill: rows pra companies existentes
+
+### Helper Edge Function compartilhado
+- `supabase/functions/_shared/safety-rails.ts` — 3 exports:
+  - `checkSafetyGates(supabaseAdmin, args)` — wrapper RPC
+  - `logAgentAction(supabaseAdmin, args)` — wrapper RPC log
+  - `withSafetyRails(supabaseAdmin, args, execute)` — wrapper unico que faz gate -> sandbox|execute|block -> log; retorna `{result?, gate, ledgerId, executed, simulated}`. Edge Fns futuras DEVEM usar este wrapper antes de chamar Meta API.
+- Tipo `SafetyBlockedError` exportado pra error handling
+
+### Frontend
+- `src/types/safety.ts` (~140 linhas) — `SafetyConfig`, `SafetyConfigPatch`, `SafetyStatus`, `ActionLedgerRow`, labels PT-BR (`BLOCK_REASON_LABELS`, `STATUS_LABELS`, `TRIGGERED_BY_LABELS`, `STATUS_COLORS`), constantes `SAFETY_DEFAULTS` + `SAFETY_LIMITS`
+- `src/hooks/use-safety.ts` — 4 hooks:
+  - `useSafetyStatus()` — query `get_safety_status` com refetch 30s
+  - `useUpdateSafetyConfig()` — mutation patch + invalidate
+  - `useResetCircuitBreaker()` — mutation que zera paused_until/paused_reason
+  - `useActionLedger(filter?)` — query ledger com filtros (status/agent_name/triggered_by, limit default 50, refetch 15s)
+- 5 componentes em `src/components/safety/`:
+  - `SafetyStatusCards.tsx` — 4 cards top: Auto-execucao / Sandbox / Acoes 1h-24h / Status pause
+  - `CircuitBreakerBanner.tsx` — alerta destacado quando paused, botao reset com cooldown countdown
+  - `SafetyConfigForm.tsx` — toggles + sliders + numeros com confirmacao 2-cliques pra desligar sandbox
+  - `ActionLedgerTable.tsx` — tabela 50 ultimas com filtros Select + badges coloridos por status
+- `src/components/SafetyView.tsx` — composicao: header + breaker banner (condicional) + status cards + config form + ledger table
+- View "Seguranca do agente" no AppSidebar (icone Shield, secundario) com **dot vermelho pulsante** quando is_paused
+
+### Integracao
+- `Index.tsx` — View union expandida com 'safety' + entry no switch
+- `AppSidebar.tsx` — useSafetyStatus para mostrar badge
+
+### Decisoes
+- **Sandbox default ON** — principio de menor surpresa: cliente novo nao deve ver agente movendo dinheiro sem consentimento explicito. Confirmacao 2-cliques pra desligar.
+- **Ledger separado de agent_runs** — agent_runs e telemetria de Edge Fn (1:N com runs). Action ledger e acoes EXTERNAS (mexer no Meta API). Misturar empurraria semantica.
+- **cost_brl_estimate NAO real** — pre-execucao precisa estimate. Refinement futuro: cron pos-acao compara com gasto real e ajusta heuristicas.
+- **Limite spend velocity absoluto (BRL) em vez de %** — v1 simplifica. v2 sub-spec calcula baseline via campaign_metrics.
+- **Trigger breaker AFTER INSERT** — lock-free; race protection via SELECT/UPDATE em UPDATE da config (nao re-disparamos se ja paused).
+- **Wraps das Edge Fns existentes deferidos** — campaign-publish, action-manager, fury-evaluate, compliance-scan, apply-creative-pipeline. Cada wrap exige review individual do pipeline (action_kind certo, cost estimate correto, idempotency_key valido). Sub-PRs separados na Sprint 1.5.
+- **Sprint 2 (meta-edits-suite) FORCA uso de safety rails** em todas as suas Edge Fns novas — ja desenhado no design.md da spec.
+
+### Backwards-compat
+- Edge Functions existentes que NAO chamarem `withSafetyRails` continuam funcionando (gates sao opt-in v1)
+- Tabelas novas com defaults conservadores pra novas companies
+- RLS preservada (no `USING(true)` em nada novo)
+
+### Pendente (sub-PRs Sprint 1.5)
+- [ ] Wrap `campaign-publish/index.ts` (action_kind='publish_campaign', cost = daily_budget * 30)
+- [ ] Wrap `action-manager/index.ts` ou seu approval-action (a depender de qual executa Meta API)
+- [ ] Wrap `fury-evaluate/index.ts` no auto-pause path
+- [ ] Wrap `compliance-scan/index.ts` no auto-takedown path
+- [ ] Wrap `apply-creative-pipeline/index.ts` (low-risk mas registra no ledger)
+- [ ] Aplicar migration via Supabase Dashboard
+- [ ] Tests SQL/unit (R10.x da spec)
+- [ ] Captain America review
+
+
+
+## Business Archetype Personas — Fase 2 (2026-05-02)
+
+> Spec: `.kiro/specs/business-archetype-personas/` — Persona-iza Fury por tipo de negócio
+> Pendente: smoke test happy path 4 arquétipos (Task 10.1 manual) + tests Vitest/Playwright (10.2*/10.3* opcionais) + execução manual do backfill quando houver volume
+
+Estende a Fase 1 (chat-publish-flow) com 4 arquétipos de negócio fixos: `small_local_business | online_seller | service_provider | info_product`. NULL preserva comportamento Fase 1 (fallback genérico).
+
+### Migration
+- `20260502000001_business_archetype_column.sql` — ALTER TABLE company_briefings ADD COLUMN business_archetype text NULL com CHECK (NULL ou 1 dos 4 enums). Aditivo, sem index extra (cardinalidade baixa, query sempre por PK).
+
+### Edge functions novas
+- `archetype-detector` — POST `{ company_id }`. Lê briefing, idempotente (skip se já setado), tenta `matchByKeyword` (heurística PT-BR ~25 termos/lista) → fallback `classifyViaLLM` (gpt-4o-mini, JSON mode, 8s timeout). Faz UPDATE em company_briefings quando classifica. Logs em agent_runs (`agent_name='archetype-detector'`, status, latency, metadata.method/confidence). Feature flag `ENABLE_ARCHETYPE_PERSONAS=false` → no-op.
+- `archetype-backfill` — POST `{ batch_size?=10, max_total?=1000 }` autenticado via SERVICE_ROLE_KEY. Loop com sleep 6s entre lotes; processa briefings status='complete' AND business_archetype IS NULL. Reusa `detectArchetype` direto (sem round-trip HTTP). Detecta falhas crônicas (3+/7d) e loga warning destacado em agent_runs.error_message — NÃO bloqueia usuário.
+
+### Edge functions estendidas
+- `ai-chat` — após resolver companyId, lê archetype via `readArchetype` (respeitando RLS); se não-null + flag ON, appenda `ARCHETYPE_BLOCKS[archetype]` ao SYSTEM_PROMPT. Loga `metadata.business_archetype` no run agregado em agent_runs. Aceita `client_metadata` no body do request (chat_messages.metadata jsonb mesclado).
+- `propose_campaign` handler — recebe archetype propagado; `resolveDefaults` aplica precedência overrides > OBJECTIVE_BY_ARCHETYPE > OBJECTIVE_BY_FORMAT; `generateCopy` injeta hint persona-específico no system prompt do gpt-4o.
+
+### Módulos shared novos
+- `_shared/archetype-reader.ts` — `readArchetype(client, companyId)` puro de leitura, sem cache, valida com isArchetype + console.warn em corrupção
+- `_shared/archetype-detector.ts` — KEYWORDS_* (4 listas curadas), `matchByKeyword` (prioridade format > niche > description; ordem de varredura info_product → online_seller → service_provider → small_local_business pra evitar falsos positivos tipo "curso de bijuteria"), `classifyViaLLM` (gpt-4o-mini), `detectArchetype` orquestradora retorna DetectionResult discriminada (`method: 'keyword'|'llm'|'failed'|'skipped'`, confidence)
+- `_shared/prompt-archetype-blocks.ts` — `ARCHETYPE_BLOCKS: Record<Archetype, string>` com 4 personas (~25 linhas cada). info_product tem aviso destacado de compliance (evitar promessas de resultado em prazo curto).
+
+### Frontend novo
+- `src/types/business-archetype.ts` — Archetype union, ARCHETYPE_VALUES, ARCHETYPE_LABELS (PT leigo: "Negócio local (loja física, restaurante, salão)" etc.), ARCHETYPE_DESCRIPTIONS, isArchetype guard
+- `src/lib/quickstart-cards.ts` — QUICKSTART_BY_ARCHETYPE com 5 chaves × 4 cards (20 cards total) + `getQuickstartCards(archetype | null)` com fallback genérico
+- `src/components/briefing/ArchetypeSelector.tsx` — Card no topo do BriefingView com Select shadcn de 5 opções (4 arquétipos + sentinel `__null__` "Não sei / Misto"), descrição inline dinâmica, auto-save via mutation do useBriefing
+- `src/hooks/use-archetype-detection.ts` — fire-and-forget POST pro archetype-detector
+
+### Frontend estendido
+- `useBriefing` hook — expõe `briefing.business_archetype` e mutation `updateArchetype(value)` com toast
+- `BriefingView` — ArchetypeSelector inserido no topo (decisão estrutural, antes do Accordion existente)
+- `BriefingWizard` — `onFinish` do StepMetaConnect dispara archetype-detector fire-and-forget antes de navegar
+- `ChatView` — substitui suggestions literais por `getQuickstartCards(archetype)`; clique propaga `card_id` + `business_archetype` em `client_metadata` do sendMessage
+- `useChat` — `sendMessage(content, attachments, metadata?)` aceita 3º arg opcional (jsonb passa em chat_messages.metadata)
+
+### Feature flag
+- `ENABLE_ARCHETYPE_PERSONAS` (default ON; ausente=ON; literal `"false"` desativa). Documentada em `.env.example` e `.kiro/steering/tech.md`. Quando OFF: ai-chat usa SYSTEM_PROMPT base, archetype-detector vira no-op, propose_campaign ignora overrides — Fase 1 preservada.
+
+### Telemetria
+- Quickstart card click → metadata `{ source: 'quickstart_card', card_id, business_archetype }` em chat_messages.metadata
+- propose_campaign → metadata.business_archetype no agent_runs (run agregado de ai-chat)
+- Detecção crônica → archetype-backfill insere warning destacado em agent_runs
+
+### Queries de validação (rodar via Management API quando precisar)
+```sql
+-- Cobertura de classificação
+SELECT business_archetype, COUNT(*) FROM company_briefings WHERE status='complete' GROUP BY business_archetype;
+
+-- Telemetria de uso por arquétipo (últimos 7d)
+SELECT metadata->>'business_archetype' as archetype, COUNT(*) as runs
+FROM agent_runs WHERE agent_name='ai-chat' AND started_at > now() - interval '7 days'
+GROUP BY 1 ORDER BY 2 DESC;
+```
+
+### Backwards-compatibility
+- Todos os parâmetros archetype são opcionais — callers Fase 1 não precisam mudar
+- archetype=null em qualquer ponto → comportamento Fase 1 puro
+- Helpers (campaign-proposal-helpers) não fazem I/O por archetype — orchestrator (ai-chat) resolve uma vez e propaga (separação de concerns documentada em JSDoc)
+
+## Chat Publish Flow — Fase 1 (2026-05-01)
+
+> Spec: `.kiro/specs/chat-publish-flow/` — Publicar campanha Meta direto pelo chat
+> Pendente: smoke test Pedro happy path (Task 9.1 manual) + E2E Playwright (deferíveis)
+
+Permite que o usuário leigo (dono de padaria/mercearia) publique uma campanha completa no Meta Ads sem sair do chat. Agente HERO coleta dados, monta proposta visual com card inline, e publica de verdade no Meta após aprovação humana.
+
+### Tabela nova
+- `campaign_proposals` — propostas geradas pela tool propose_campaign. Lifecycle: `pending_approval → cancelled | publishing → live | failed | expired`. Colunas: id, company_id, conversation_id, created_by_message_id, creative_id (FK creatives_generated), payload_jsonb (CampaignProposalPayload), compliance_jsonb (CompliancePreview), status (CHECK enum), publication_id (FK campaign_publications), error_payload, created_at, updated_at, expires_at (default now+24h)
+- RLS: SELECT/UPDATE por current_user_company_id; INSERT bloqueado a usuários (só service-role); DELETE bloqueado (audit trail)
+- Realtime publication ativada — frontend assina `campaign-proposal-${id}`
+
+### Edge functions
+- `ai-chat` — adicionadas 2 tools novas: `propose_campaign` e `publish_campaign` (handlers em `_shared/`)
+- `campaign-publish` — refatorado: importa `runComplianceCheckRaw` do novo módulo shared (sem mudança de comportamento)
+
+### Módulos compartilhados novos (`_shared/`)
+- `compliance-runner.ts` — duas APIs: `runComplianceCheckRaw` (saída legado pra gate) + `runComplianceCheck` (UI shape: severity/score/hits/blocking/duration_ms) com timeout configurável e fail-open
+- `campaign-proposal-helpers.ts` — 4 funções: `checkPrereqs` (TenantPrereqGuard), `resolveDefaults` (BriefingResolver), `generateCopy` (CopyGenerator gpt-4o), `mapProposalToCampaignBody` (Zod mapper)
+- `propose-campaign-handler.ts` — handler completo com validação Zod, gate de prereq, signed URL TTL 15min, compliance preview, INSERT em proposals
+- `publish-campaign-handler.ts` — handler completo com 7 error_kinds (validation/compliance/upstream/timeout/wrong_status/proposal_not_found/unknown), regenera signed URL, repassa user JWT pro campaign-publish
+
+### Frontend
+- `src/types/campaign-proposal.ts` (~180 LOC) — 12 tipos cobrindo proposal, payload, compliance, errors
+- `src/hooks/use-campaign-proposal.ts` — fetch + realtime channel + cancel/edit mutations
+- `src/components/chat/InlineCampaignProposalCard.tsx` (~230 LOC) — card visual com 5 estados (pending_approval, publishing, live, failed, cancelled/expired); reusa `useCampaignPublication` para polling pós-publish
+- `src/components/chat/CampaignProposalEditor.tsx` — modal de edição (budget, age range, headline, body, description, cta) com validação inline
+- `ChatView` — detecta marker `<campaign-proposal id="..."/>` e renderiza o card
+
+### System prompt v2
+- Nova seção `## FLUXO DE PUBLICACAO DE ANUNCIO` em `_shared/prompt.ts` (~80 LOC)
+- Glossário leigo (8 termos traduzidos); pixel/ad set marcados como NUNCA mencionar
+- Sequência guiada A→B→C pós-`<creative-gallery>` com limite de 2 turns
+- Tratamento de mensagem `[SISTEMA] Aprovo publicar` → invoca publish_campaign
+- Defaults pra negócio físico local (TRAFFIC/ENGAGEMENT, mencionar bairro, R$10-30/dia)
+
+### Decisões arquiteturais (research.md)
+- Tabela nova em vez de reusar `approvals` (semântica diferente: proposta editável + polling pós-publish)
+- Compliance refator: `runComplianceCheck` extraído para módulo único usado por preview (card) e gate (campaign-publish)
+- Múltiplas pages: heurística "primeiro ativo" + fallback chat se ambíguo
+- meta-sync pós-live via cron existente (eventual consistency 0-60s, sem latência adicional)
+- Targeting v1 simples: só age + countries=BR (interests com Targeting Search API ficam pra Fase 2)
+- Image URL: signed Supabase com TTL 15min, regenerada fresh no publish
+
+## Fury Learning v1 (2026-04-27 → CLOSED 2026-05-02)
 
 > Spec: `.kiro/specs/fury-learning/` — Regras aprendidas via chat
-> Pendente: deploy de migrations + edge fns + Fase 6 auto-trigger (proximo sprint)
+> Status: SHIPPED — deploy verificado, Fase 6 implementada, Captain America review APROVADO
 
 Sistema que detecta instrucoes com tom de regra permanente no chat (sempre, toda vez, nunca, use sempre, padronize) e propoe via card inline. Usuario aprova/edita/descarta; ao aprovar, regra entra em behavior_rules / creative_pipeline_rules / fury_rules e passa a ser aplicada automaticamente. Behavior rules sao injetadas no system prompt em todo chat. Pipeline rules sao aplicaveis em criativos via Edge Function `apply-creative-pipeline` (imagescript).
 
@@ -40,12 +597,26 @@ Sistema que detecta instrucoes com tom de regra permanente no chat (sempre, toda
 
 ### Tests
 - Unit: 11 tests passando em `src/test/fury-rules/schemas.test.ts`
-- SQL integration + E2E: pendentes (apos deploy de migrations no remoto)
 
-### Pendente
-- T1.5 / T1.6: `npx supabase db push` + `npx supabase gen types`
-- T2.5: deploy de `ai-chat` (atualizada) + `apply-creative-pipeline` (nova)
-- Fase 6 (proximo sprint): auto-trigger de `apply-creative-pipeline` apos `creative-generate` aprovado em StudioView + badge "Pipeline aplicado"
+### Fase 6 — Auto-trigger pipeline (closeout 2026-05-02)
+- `useApplyCreativePipeline` disparado fire-and-forget em `StudioView.handleBulkApprove` (bulk approve) e `CreativeGalleryInline.handleApprove` (approve inline) após criativo aprovado
+- `useCreatives` ganhou subscription Supabase Realtime em `creatives_generated` filtrada por company_id, invalida `['creatives', companyId]` em UPDATE — UI reflete `pipeline_status='applied'` automaticamente
+- Badge `Pipeline aplicado (N)` com ícone Wand2 em `CreativeDetailDialog`; grid do StudioView já tinha badge prévio
+- Idempotente: edge fn skipa criativos com `pipeline_applied_rules.length > 0` (`already_applied`)
+
+### Hardening aplicado 2026-05-02 (3 recomendações Captain)
+- Migration `20260502000002_remove_svg_from_pipeline_assets.sql` — removido `image/svg+xml` do CHECK constraint de `creative_assets.mime_type` E do `allowed_mime_types` do bucket `pipeline-assets`. Verificado 0 rows existentes com SVG antes de aplicar.
+- `ai-chat` propose_rule handler — guard `bytes.length > 5MB` no asset move (chat-attachments → pipeline-assets), falha cedo com mensagem clara
+- `apply-creative-pipeline` `applyTransform` — recebe `companyId` como argumento e adiciona `.eq('company_id', companyId)` na query do `creative_assets` (defense-in-depth contra regra cross-tenant criada via service-role no futuro)
+
+### Captain America Review — APROVADO 2026-05-02
+- RLS habilitada em todas as 5 tabelas, policies tenant-scoped (sem `USING(true)` perigoso)
+- `rule_proposal_events` imutável (só SELECT+INSERT) — bom audit log
+- Triggers `auto_set_company_id_*` blindam INSERT contra payload cross-tenant
+- Bucket `pipeline-assets` privado, file_size_limit 5MB, MIME whitelist no bucket E na edge fn
+- Storage policies validam `(storage.foldername(name))[1] = company_id::text`
+- `apply-creative-pipeline` valida `creative.company_id !== companyId` antes de processar
+- Recomendações não-bloqueadoras (anotadas em tasks.md T1.4): revisar SVG na whitelist (mitigado pelo bucket privado), validar bytes ≤5MB cedo no propose_rule, adicionar `.eq('company_id', companyId)` em applyTransform como defense-in-depth
 
 ## Chat Multimodal (2026-04-27)
 

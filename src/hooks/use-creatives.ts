@@ -11,7 +11,7 @@
 // Erros sao traduzidos pra CreativeError discriminated union.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -135,6 +135,29 @@ export function useCreatives() {
     queryClient.invalidateQueries({ queryKey: ['creatives', companyId] });
     queryClient.invalidateQueries({ queryKey: ['creative-usage', companyId] });
   };
+
+  // Fase 6 (T6.3): realtime de creatives_generated — refetch quando pipeline_status muda
+  // Channel name unico por mount pra evitar erro "cannot add callbacks after subscribe"
+  // (StrictMode + removeChannel async => mount 2 reutiliza nome em estado stale)
+  useEffect(() => {
+    if (!companyId) return;
+    const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    const channel = supabase
+      .channel(`creatives-generated-${companyId}-${uniqueId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'creatives_generated', filter: `company_id=eq.${companyId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['creatives', companyId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, queryClient]);
 
   const setFilters = (
     f: Partial<CreativeFilters> | ((prev: CreativeFilters) => CreativeFilters),

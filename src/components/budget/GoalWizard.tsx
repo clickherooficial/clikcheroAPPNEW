@@ -12,7 +12,7 @@ import { useBudgetRecommend, type BudgetRecommendation } from '@/hooks/use-budge
 const STEPS = [
   { key: 'objective', label: 'Objetivo' },
   { key: 'goal', label: 'Meta' },
-  { key: 'budget', label: 'Orcamento' },
+  { key: 'budget', label: 'Orçamento' },
 ];
 
 export function GoalWizard() {
@@ -88,7 +88,7 @@ export function GoalWizard() {
         </Button>
         {step < STEPS.length - 1 && (
           <Button onClick={() => setStep(step + 1)} disabled={!canNext()}>
-            Proximo <ChevronRight className="w-4 h-4 ml-1" />
+            Próximo <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         )}
       </div>

@@ -776,6 +776,454 @@ export const CHAT_TOOLS = [
       },
     },
   },
+  // ============================================================
+  // chat-publish-flow (Fase 1) — propose_campaign
+  // ============================================================
+  {
+    type: 'function' as const,
+    function: {
+      name: 'propose_campaign',
+      description:
+        'Monta uma PROPOSTA de campanha Meta Ads pronta pra publicacao a partir de um criativo (imagem) ja gerado e dos dados do briefing. Use APENAS quando: (1) ja existe uma imagem gerada pelo creative-specialist (voce viu uma tag <creative-gallery ids="..."/> em mensagem anterior nesta conversa) E (2) o usuario sinalizou que quer anunciar (ex: "vamos anunciar", "pode publicar", "manda pro Facebook"). NAO use pra fazer analise, comparacao ou geracao de criativo. A tool pre-preenche objetivo, publico, orcamento e copy a partir da oferta principal do briefing — passe parametros opcionais APENAS quando o usuario explicitar (ex: "quero anunciar com R$50/dia"). Devolve um card de resumo inline pro usuario revisar e clicar Publicar/Editar/Cancelar — voce nao precisa pedir confirmacao depois, o card cuida disso.',
+      parameters: {
+        type: 'object',
+        properties: {
+          creative_id: {
+            type: 'string',
+            description: 'UUID do criativo gerado (id da tabela creatives_generated, mesmo id que aparece em <creative-gallery ids="..."/>).',
+          },
+          objective: {
+            type: 'string',
+            enum: ['SALES', 'LEADS', 'AWARENESS', 'TRAFFIC', 'ENGAGEMENT'],
+            description: 'Override do objetivo (default vem do format da oferta principal).',
+          },
+          daily_budget_brl: {
+            type: 'number',
+            description: 'Override do orcamento diario em BRL (minimo 10). Default = 10.',
+          },
+          audience_overrides: {
+            type: 'object',
+            description: 'Override do publico-alvo. v1: so age_min/age_max + countries.',
+            properties: {
+              age_min: { type: 'number' },
+              age_max: { type: 'number' },
+              geo_locations: {
+                type: 'object',
+                properties: {
+                  countries: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+          },
+          copy_overrides: {
+            type: 'object',
+            description: 'Override do texto do anuncio. Limites Meta: headline<=40, body<=125, description<=27.',
+            properties: {
+              headline: { type: 'string' },
+              body: { type: 'string' },
+              description: { type: 'string' },
+              cta: {
+                type: 'string',
+                enum: ['LEARN_MORE', 'SHOP_NOW', 'SIGN_UP', 'SUBSCRIBE', 'DOWNLOAD', 'CONTACT_US', 'GET_OFFER', 'BOOK_NOW'],
+              },
+            },
+          },
+        },
+        required: ['creative_id'],
+      },
+    },
+  },
+  // ===== meta-edits-suite (Sprint 2/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_campaign',
+      description:
+        'Atualiza UMA CAMPANHA EXISTENTE no Meta Ads (budget, status, name, bid strategy, schedule). Use quando o usuario pedir pra editar uma campanha que JA existe. NAO use pra criar campanha — para isso use propose_campaign + publish_campaign. Sempre prefira identificar por campaign_id (uuid local). Em sandbox, a edicao e simulada.',
+      parameters: {
+        type: 'object',
+        properties: {
+          campaign_id: { type: 'string', description: 'UUID local da campanha (preferido)' },
+          campaign_external_id: { type: 'string', description: 'External id Meta (fallback se nao tiver uuid)' },
+          name: { type: 'string', description: 'Novo nome (max 250 chars)' },
+          status: { type: 'string', enum: ['ACTIVE', 'PAUSED'] },
+          daily_budget: { type: 'number', description: 'Orcamento diario em BRL (min 5)' },
+          lifetime_budget: { type: 'number', description: 'Orcamento total em BRL (min 50). Mutuamente exclusivo com daily_budget.' },
+          bid_strategy: { type: 'string', enum: ['LOWEST_COST_WITHOUT_CAP', 'LOWEST_COST_WITH_BID_CAP', 'COST_CAP'] },
+          bid_amount: { type: 'number', description: 'Valor do bid em BRL (so com bid_strategy != LOWEST_COST_WITHOUT_CAP)' },
+          start_time: { type: 'string', description: 'ISO datetime' },
+          stop_time: { type: 'string', description: 'ISO datetime' },
+          force: { type: 'boolean', description: 'Skipa drift check; use so quando souber que esta corrigindo algo do usuario' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_adset',
+      description:
+        'Atualiza UM ADSET EXISTENTE (budget, status, optimization_goal, bid, targeting merge, schedule). Use quando o usuario pedir pra editar um adset. targeting_patch e SHALLOW MERGE sobre targeting atual. NAO use pra criar.',
+      parameters: {
+        type: 'object',
+        properties: {
+          adset_id: { type: 'string' },
+          adset_external_id: { type: 'string' },
+          name: { type: 'string' },
+          status: { type: 'string', enum: ['ACTIVE', 'PAUSED'] },
+          daily_budget: { type: 'number', description: 'Em BRL' },
+          lifetime_budget: { type: 'number', description: 'Em BRL' },
+          optimization_goal: { type: 'string', enum: ['LINK_CLICKS', 'OFFSITE_CONVERSIONS', 'LANDING_PAGE_VIEWS', 'POST_ENGAGEMENT', 'REACH', 'IMPRESSIONS'] },
+          bid_amount: { type: 'number' },
+          targeting_patch: { type: 'object', description: 'Objeto de patch de targeting (merge sobre o atual)' },
+          start_time: { type: 'string' },
+          end_time: { type: 'string' },
+          force: { type: 'boolean' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_ad',
+      description:
+        'Atualiza UM AD EXISTENTE (status, name, troca de creative). Para trocar criativo, passe creative_id (id externo do creative no Meta). NAO use pra criar.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ad_id: { type: 'string' },
+          ad_external_id: { type: 'string' },
+          name: { type: 'string' },
+          status: { type: 'string', enum: ['ACTIVE', 'PAUSED'] },
+          creative_id: { type: 'string', description: 'External id do creative Meta a vincular ao ad' },
+          force: { type: 'boolean' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'shift_budget',
+      description:
+        'Move budget de uma entidade pra outra (campaign->campaign ou adset->adset). Sequencia atomica: decrementa origem, incrementa destino, se a 2a falhar faz rollback. Use quando o usuario pedir pra realocar verba entre 2 entidades especificas.',
+      parameters: {
+        type: 'object',
+        properties: {
+          from_entity_kind: { type: 'string', enum: ['campaign', 'adset'] },
+          from_entity_id: { type: 'string' },
+          from_external_id: { type: 'string' },
+          to_entity_kind: { type: 'string', enum: ['campaign', 'adset'] },
+          to_entity_id: { type: 'string' },
+          to_external_id: { type: 'string' },
+          amount_brl: { type: 'number', description: 'Valor positivo a transferir, em BRL' },
+          force: { type: 'boolean' },
+        },
+        required: ['from_entity_kind', 'to_entity_kind', 'amount_brl'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'change_schedule',
+      description:
+        'Edita janela de execucao (start/stop/end) e/ou ad scheduling (dayparting) em campaign ou adset. Dayparting (schedule[]) so funciona em adset com lifetime_budget. start_minute/end_minute sao minutos do dia (0-1440); days e array 0-6 (0=domingo).',
+      parameters: {
+        type: 'object',
+        properties: {
+          entity_kind: { type: 'string', enum: ['campaign', 'adset'] },
+          entity_id: { type: 'string' },
+          external_id: { type: 'string' },
+          start_time: { type: 'string', description: 'ISO datetime' },
+          stop_time: { type: 'string', description: 'ISO datetime (campaign)' },
+          end_time: { type: 'string', description: 'ISO datetime (adset)' },
+          schedule: {
+            type: 'array',
+            description: 'Dayparting (so adsets com lifetime_budget). Cada item {start_minute, end_minute, days[]}',
+            items: {
+              type: 'object',
+              properties: {
+                start_minute: { type: 'number' },
+                end_minute: { type: 'number' },
+                days: { type: 'array', items: { type: 'number' } },
+              },
+            },
+          },
+          force: { type: 'boolean' },
+        },
+        required: ['entity_kind'],
+      },
+    },
+  },
+  // ===== audience-management (Sprint 3/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_customer_list_audience',
+      description:
+        'Cria uma Custom Audience no Meta Ads a partir de uma lista de clientes. PII (email/telefone) DEVE estar SHA256-hashed (hex 64 chars) ANTES de chamar — o frontend faz isso via WebCrypto. Server NAO aceita texto claro. Use quando o usuario disser "audiencia de quem ja comprou", "remarketing dos meus leads", "carrega minha base de clientes".',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome da audiencia (max 80 chars)' },
+          description: { type: 'string' },
+          customer_file_source: {
+            type: 'string',
+            enum: ['USER_PROVIDED_ONLY', 'PARTNER_PROVIDED_ONLY', 'BOTH_USER_AND_PARTNER_PROVIDED'],
+          },
+          payload: {
+            type: 'object',
+            properties: {
+              schema: {
+                type: 'array',
+                items: { type: 'string', enum: ['EMAIL', 'PHONE', 'FN', 'LN', 'GEN', 'DOBY', 'COUNTRY'] },
+              },
+              data: {
+                type: 'array',
+                description: 'Array de arrays de hashes SHA256 hex (64 chars). Cada subarray = 1 pessoa, mesma cardinalidade do schema.',
+                items: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            required: ['schema', 'data'],
+          },
+          retention_days: { type: 'number', description: 'Dias que Meta mantem a lista (1-540, default 180)' },
+        },
+        required: ['name', 'payload'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_lookalike_audience',
+      description:
+        'Cria Lookalike Audience (semelhantes) baseada em audiencia existente. Origem precisa ter >=100 pessoas (Meta exige). Use quando o usuario pedir "publico parecido com X", "expandir base", "lookalike". Ratio = 0.01 (1%, mais similar) a 0.10 (10%, mais alcance).',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          origin_audience_id: { type: 'string', description: 'UUID local da audiencia origem (preferido)' },
+          origin_audience_external_id: { type: 'string' },
+          lookalike_spec: {
+            type: 'object',
+            properties: {
+              country: { type: 'string', description: 'ISO-2 (ex: BR, US)' },
+              ratio: { type: 'number', enum: [0.01, 0.02, 0.05, 0.10] },
+              type: { type: 'string', enum: ['similarity', 'reach', 'reach_and_similarity'] },
+            },
+            required: ['country', 'ratio'],
+          },
+        },
+        required: ['name', 'lookalike_spec'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_audience',
+      description:
+        'Atualiza name/description/retention_days de audiencia existente. NAO usa pra adicionar/remover usuarios da lista — pra trocar a base, criar nova com create_customer_list_audience.',
+      parameters: {
+        type: 'object',
+        properties: {
+          audience_id: { type: 'string' },
+          audience_external_id: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          retention_days: { type: 'number' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'delete_audience',
+      description:
+        'Deleta uma audiencia. Recusa se em uso por adset ATIVO; recusa sem confirm=true. Use APENAS quando o usuario explicitamente disser "deleta a audiencia X" / "apaga essa audiencia".',
+      parameters: {
+        type: 'object',
+        properties: {
+          audience_id: { type: 'string' },
+          confirm: { type: 'boolean', description: 'Deve ser true pra confirmar; default false (defesa contra LLM acidental)' },
+        },
+        required: ['audience_id'],
+      },
+    },
+  },
+  // ===== agency-mode (Sprint 8/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_ad_accounts',
+      description: 'Lista todas as ad_accounts conectadas no Meta da company atual + qual esta marcada como preferida.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'set_preferred_ad_account',
+      description: 'Define qual ad_account e a "ativa" pra esta company. Todas as Edge Fns futuras (publicar, editar, criar audiencia) vao usar essa conta. Use quando o usuario disser "agora usa a conta X" / "muda pra conta Y".',
+      parameters: {
+        type: 'object',
+        properties: { external_id: { type: 'string', description: 'External id Meta (act_XXXX ou XXXX)' } },
+        required: ['external_id'],
+      },
+    },
+  },
+
+  // ===== ab-testing (Sprint 7/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'start_ab_test',
+      description:
+        'Inicia track de A/B test entre 2 variantes Meta (campaign/adset/ad). NAO duplica nada — apenas registra o pareamento. Use quando o usuario disser "to testando A vs B" / "qual ta ganhando entre essas 2".',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          variant_a_kind: { type: 'string', enum: ['campaign', 'adset', 'ad'] },
+          variant_a_external_id: { type: 'string' },
+          variant_a_label: { type: 'string', description: 'Apelido pra UI ex: "Headline curta"' },
+          variant_b_kind: { type: 'string', enum: ['campaign', 'adset', 'ad'] },
+          variant_b_external_id: { type: 'string' },
+          variant_b_label: { type: 'string' },
+          criterion: { type: 'string', enum: ['ctr', 'cpl', 'roas', 'conversions', 'spend_efficiency'] },
+          notes: { type: 'string' },
+        },
+        required: ['name', 'variant_a_kind', 'variant_a_external_id', 'variant_b_kind', 'variant_b_external_id', 'criterion'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_ab_tests',
+      description: 'Lista A/B tests da company (ativos + encerrados, ultimos 20).',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'evaluate_ab_test',
+      description:
+        'Avalia A/B test agora. Computa metricas de cada variante desde started_at, decide vencedor (heuristica: 10% diff + amostra minima 30 conversoes/100 cliques pra CTR). Atualiza ab_tests.winner_variant.',
+      parameters: {
+        type: 'object',
+        properties: { test_id: { type: 'string' } },
+        required: ['test_id'],
+      },
+    },
+  },
+
+  // ===== catalog-management (Sprint 6/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_catalogs',
+      description:
+        'Lista product catalogs (Meta Business Catalog) e seus product_sets sincronizados localmente. Use quando o usuario perguntar sobre catalogos disponiveis pra DPA, ou pra confirmar qual catalog/set usar antes de criar campanha.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+
+  // ===== agent-execution-loop (Sprint 5/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'execute_plan',
+      description:
+        'Executa um PLAN aprovado pelo usuario sequencialmente, passo a passo. NUNCA chame antes do usuario ter clicado "Aprovar" no card de plan na UI — usuario aprova primeiro, depois vc pode chamar essa tool. Para no primeiro fail; ledger_ids capturados pra rollback futuro.',
+      parameters: {
+        type: 'object',
+        properties: {
+          plan_id: { type: 'string', description: 'UUID do plan retornado por propose_plan' },
+        },
+        required: ['plan_id'],
+      },
+    },
+  },
+
+  // ===== pixel-engagement-audiences (Sprint 4/8) =====
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_pixel_audience',
+      description:
+        'Cria Custom Audience baseada em eventos do Pixel (visitou pagina, AddToCart, Purchase, etc). Meta popula automaticamente a partir do historico ate retention_days. Use quando o usuario disser "audiencia de quem visitou meu site", "carrinho abandonado", "comprou ultimos 30d". Liste pixels disponiveis chamando UI ou perguntando ao usuario o pixel_id.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Max 80 chars' },
+          pixel_id: { type: 'string', description: 'External id do Meta Pixel' },
+          event: {
+            type: 'string',
+            enum: ['PageView', 'AddToCart', 'Purchase', 'Lead', 'CompleteRegistration', 'ViewContent', 'AddPaymentInfo', 'InitiateCheckout', 'Search', 'Subscribe'],
+          },
+          url_contains: { type: 'string', description: 'Filtra eventos cuja URL contem essa string (case-insensitive)' },
+          retention_days: { type: 'number', description: '1-180 dias' },
+          exclude_event: {
+            type: 'string',
+            enum: ['PageView', 'AddToCart', 'Purchase', 'Lead', 'CompleteRegistration', 'ViewContent', 'AddPaymentInfo', 'InitiateCheckout', 'Search', 'Subscribe'],
+            description: 'Excluir quem disparou esse evento (ex: ViewContent E nao Purchase = visitantes que nao compraram)',
+          },
+        },
+        required: ['name', 'pixel_id', 'event'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_engagement_audience',
+      description:
+        'Cria Custom Audience baseada em interacao social (curtiu pagina, viu video Y%, abriu lead form, etc). Use quando o usuario disser "quem viu 75% do video X", "engajou no IG", "abriu meu form de contato". Liste fontes (pages, videos, lead forms) via UI ou pedir ao usuario.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          source_kind: { type: 'string', enum: ['page', 'ig_business', 'video', 'lead_form', 'event'] },
+          source_id: { type: 'string', description: 'External id da fonte (page_id, video_id, lead_form_id, etc)' },
+          template: {
+            type: 'string',
+            enum: [
+              'page_engaged_users', 'page_visitors',
+              'video_viewers_25_pct', 'video_viewers_50_pct', 'video_viewers_75_pct', 'video_viewers_95_pct',
+              'video_viewers_3_seconds', 'video_viewers_10_seconds',
+              'lead_form_opened', 'lead_form_submitted',
+              'event_responded', 'event_attended',
+            ],
+          },
+          retention_days: { type: 'number', description: '1-365 dias' },
+        },
+        required: ['name', 'source_kind', 'source_id', 'template'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'publish_campaign',
+      description:
+        'Publica DE VERDADE no Meta Ads uma proposta previamente aprovada pelo usuario. Use APENAS quando o usuario aprovou explicitamente clicando "Publicar" no card de proposta — voce vai receber uma mensagem [SISTEMA] dizendo "Aprovo publicar a proposta <id>" ou "Tente publicar novamente a proposta <id>". NUNCA invoque essa tool sem ter visto essa mensagem [SISTEMA] primeiro. Use o id exato que veio na mensagem.',
+      parameters: {
+        type: 'object',
+        properties: {
+          proposal_id: {
+            type: 'string',
+            description: 'UUID da campaign_proposal previamente criada por propose_campaign.',
+          },
+        },
+        required: ['proposal_id'],
+      },
+    },
+  },
 ];
 
 /**

@@ -57,7 +57,7 @@ export function CreativePreviewModal({ creative, onClose }: Props) {
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("Nao autenticado");
+        if (!session) throw new Error("Não autenticado");
 
         const url = import.meta.env.VITE_SUPABASE_URL as string;
         const apikey =

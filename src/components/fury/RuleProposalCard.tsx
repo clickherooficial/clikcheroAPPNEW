@@ -14,7 +14,7 @@ import { navigateToView, type CerebroRulesSubTab } from '@/lib/view-navigation';
 function ruleSubTabFor(ruleType: string): CerebroRulesSubTab {
   if (ruleType === 'behavior') return 'comportamento';
   if (ruleType === 'creative_pipeline') return 'pipeline';
-  if (ruleType === 'action') return 'acoes';
+  if (ruleType === 'action') return 'ações';
   return 'todas';
 }
 
@@ -88,7 +88,7 @@ export function RuleProposalCard({ messageId, envelope }: Props) {
             cerebroRulesSubTab: ruleSubTabFor(envelope.rule_type),
           })}
         >
-          Ver em Configuracoes <ArrowRight className="h-3 w-3" />
+          Ver em Configurações <ArrowRight className="h-3 w-3" />
         </Button>
       </div>
     );

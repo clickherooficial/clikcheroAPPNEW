@@ -7,12 +7,12 @@ import AnalysisView from './AnalysisView';
 import BudgetSmartView from './budget/BudgetSmartView';
 import { clearTabPref, readTabPref } from '@/lib/view-navigation';
 
-type Tab = 'resumo' | 'analise' | 'orcamento';
+type Tab = 'resumo' | 'análise' | 'orçamento';
 
 export default function PainelView() {
   const [tab, setTab] = useState<Tab>(() => {
     const pref = readTabPref('painel');
-    if (pref === 'analise' || pref === 'orcamento') return pref;
+    if (pref === 'análise' || pref === 'orçamento') return pref;
     return 'resumo';
   });
   useEffect(() => { clearTabPref('painel'); }, []);
@@ -23,16 +23,16 @@ export default function PainelView() {
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList>
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
-            <TabsTrigger value="analise">Analise</TabsTrigger>
-            <TabsTrigger value="orcamento">Orcamento</TabsTrigger>
+            <TabsTrigger value="análise">Análise</TabsTrigger>
+            <TabsTrigger value="orçamento">Orçamento</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       <div className="px-0">
         {tab === 'resumo' && <DashboardView />}
-        {tab === 'analise' && <AnalysisView />}
-        {tab === 'orcamento' && <BudgetSmartView />}
+        {tab === 'análise' && <AnalysisView />}
+        {tab === 'orçamento' && <BudgetSmartView />}
       </div>
     </div>
   );

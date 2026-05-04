@@ -37,7 +37,7 @@ export function ComplianceDetail({ score, onClose }: Props) {
               <img src={score.creative_image_url} alt="" className="w-12 h-12 rounded object-cover" />
             )}
             <div>
-              <div className="text-base">{score.creative_name ?? 'Anuncio'}</div>
+              <div className="text-base">{score.creative_name ?? 'Anúncio'}</div>
               <div className="text-xs text-muted-foreground font-normal">{score.external_ad_id}</div>
             </div>
           </SheetTitle>
@@ -74,7 +74,7 @@ export function ComplianceDetail({ score, onClose }: Props) {
               </div>
             ) : !violations || violations.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                Nenhuma violacao encontrada. Anuncio conforme!
+                Nenhuma violacao encontrada. Anúncio conforme!
               </div>
             ) : (
               <div className="space-y-3">

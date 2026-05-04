@@ -78,7 +78,7 @@ export function PieChartSpendByCampaign({ metrics }: Props) {
   if (total === 0) {
     return (
       <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
-        Sem gasto no periodo
+        Sem gasto no período
       </div>
     );
   }

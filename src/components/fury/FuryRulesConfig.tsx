@@ -10,7 +10,7 @@ const UNIT_LABELS: Record<string, string> = {
   frequency: 'frequencia',
   currency: 'R$',
   percent: '%',
-  percent_budget: '% do orcamento',
+  percent_budget: '% do orçamento',
   percent_below: '% abaixo do target',
 };
 
@@ -104,7 +104,7 @@ export function FuryRulesConfig() {
                         onCheckedChange={(v) => updateRule.mutate({ id: rule.id, auto_execute: v })}
                       />
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {rule.auto_execute ? 'Sim' : 'Nao'}
+                        {rule.auto_execute ? 'Sim' : 'Não'}
                       </span>
                     </div>
                   </div>

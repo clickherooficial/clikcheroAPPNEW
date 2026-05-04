@@ -23,6 +23,12 @@ interface MetaCampaign {
   lifetime_budget?: string;
   budget_remaining?: string;
   created_time?: string;
+  // meta-edits-suite (Sprint 2): campos editaveis populados aqui pra update_campaign comparar com remoto
+  bid_strategy?: string;
+  bid_amount?: string;
+  start_time?: string;
+  stop_time?: string;
+  spend_cap?: string;
 }
 
 interface MetaInsight {
@@ -266,7 +272,7 @@ async function syncAccount(
   // ===== 1. Sync campaigns =====
   const campaignsUrl =
     `${GRAPH_BASE}/${actId}/campaigns` +
-    `?fields=id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,created_time` +
+    `?fields=id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,created_time,bid_strategy,bid_amount,start_time,stop_time,spend_cap` +
     `&limit=100&access_token=${token}`;
 
   const campaignsResp = await fetch(campaignsUrl);
@@ -280,11 +286,11 @@ async function syncAccount(
   const campaignIdMap = new Map<string, string>(); // external_id -> internal uuid
 
   for (const c of campaigns) {
-    const budget = c.daily_budget
-      ? Number(c.daily_budget) / 100
-      : c.lifetime_budget
-      ? Number(c.lifetime_budget) / 100
-      : null;
+    const dailyBudget = c.daily_budget ? Number(c.daily_budget) / 100 : null;
+    const lifetimeBudget = c.lifetime_budget ? Number(c.lifetime_budget) / 100 : null;
+    const budget = dailyBudget ?? lifetimeBudget;
+    const bidAmount = c.bid_amount ? Number(c.bid_amount) / 100 : null;
+    const spendCap = c.spend_cap ? Number(c.spend_cap) / 100 : null;
 
     const { data: upserted } = await supabase
       .from('campaigns')
@@ -298,6 +304,14 @@ async function syncAccount(
           objective: c.objective ?? null,
           buying_type: c.buying_type ?? null,
           budget,
+          // Sprint 2 (meta-edits-suite): campos especificos pra update_campaign
+          daily_budget: dailyBudget,
+          lifetime_budget: lifetimeBudget,
+          bid_strategy: c.bid_strategy ?? null,
+          bid_amount: bidAmount,
+          start_time: c.start_time ?? null,
+          stop_time: c.stop_time ?? null,
+          spend_cap: spendCap,
           budget_remaining: c.budget_remaining ? Number(c.budget_remaining) / 100 : null,
           account: actId,
           integration_id: integrationId,

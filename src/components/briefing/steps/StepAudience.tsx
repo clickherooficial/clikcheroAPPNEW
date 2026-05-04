@@ -12,6 +12,7 @@ import type { AudienceData } from '@/types/briefing';
 interface Props {
   initial: AudienceData;
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onSubmit: (audience: AudienceData) => void;
   onBack: () => void;
 }
@@ -49,7 +50,7 @@ const CONSCIENCIA_DOR_OPTIONS = [
   },
 ] satisfies { level: 1 | 2 | 3 | 4 | 5; titulo: string; texto: string }[];
 
-export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
+export function StepAudience({ initial, disabled, mode = 'wizard', onSubmit, onBack }: Props) {
   const [ageMin, setAgeMin] = useState(initial.ageRange?.min ?? 18);
   const [ageMax, setAgeMax] = useState(initial.ageRange?.max ?? 45);
   const [gender, setGender] = useState<AudienceData['gender']>(initial.gender ?? 'mixed');
@@ -188,8 +189,10 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
         <TagInput value={samples} onChange={setSamples} placeholder='Ex: "to cansada de dieta"' disabled={disabled} max={20} />
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+      <div className={mode === 'settings' ? 'flex justify-end pt-4' : 'flex justify-between pt-4'}>
+        {mode !== 'settings' && (
+          <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+        )}
         <Button
           disabled={!canSubmit || disabled}
           onClick={() =>
@@ -206,7 +209,7 @@ export function StepAudience({ initial, disabled, onSubmit, onBack }: Props) {
             })
           }
         >
-          Continuar
+          {mode === 'settings' ? 'Salvar alteracoes' : 'Continuar'}
         </Button>
       </div>
     </div>

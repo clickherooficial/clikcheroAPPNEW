@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useBriefing } from '@/hooks/use-briefing';
+import { useArchetypeDetection } from '@/hooks/use-archetype-detection';
 import { StepBusiness } from './steps/StepBusiness';
 import { StepOffers } from './steps/StepOffers';
 import { StepAudience } from './steps/StepAudience';
@@ -46,23 +47,24 @@ const STEP_TITLES: Record<StepNum, string> = {
   3: 'Cliente ideal (ICP)',
   4: 'Tom de voz da sua marca',
   5: 'Identidade visual',
-  6: 'O que NAO usar (proibicoes)',
+  6: 'O que Não usar (proibições)',
   7: 'Meta e Business Manager',
 };
 
 const STEP_HELPER: Record<StepNum, string> = {
-  1: 'Ajude-nos a entender o que sua empresa faz e onde voce esta nas redes.',
-  2: 'O que voce vende: nome, preco e descricao do principal produto ou servico.',
-  3: 'Quem e a pessoa ideal que compra de voce: idade, lugar, dor, comportamento',
-  4: 'Como SUA MARCA fala nos anuncios: formal/casual, palavras que voce usa, palavras que nao quer ver',
+  1: 'Ajude-nos a entender o que sua empresa faz e onde você esta nas redes.',
+  2: 'O que você vende: nome, preço e descrição do principal produto ou serviço.',
+  3: 'Quem e a pessoa ideal que compra de você: idade, lugar, dor, comportamento',
+  4: 'Como SUA MARCA fala nos anúncios: formal/casual, palavras que você usa, palavras que não quer ver',
   5: 'Suas cores e logo para manter a marca consistente nos seus materiais.',
   6: 'Palavras, assuntos ou imagens que NUNCA podem aparecer (compliance)',
-  7: 'Conecte a conta Meta do seu negocio para importar campanhas, paginas e contas de anuncio. Voce pode ajustar depois em Integracoes.',
+  7: 'Conecte a conta Meta do seu negocio para importar campanhas, páginas e contas de anúncio. Você pode ajustar depois em Integrações.',
 };
 
 export function BriefingWizard() {
   const { briefing, isLoading, isReadOnly, saveStep } = useBriefing();
-  const { role } = useAuth();
+  const { role, company } = useAuth();
+  const { trigger: triggerArchetypeDetection } = useArchetypeDetection();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -115,7 +117,7 @@ export function BriefingWizard() {
       <div className="container max-w-2xl py-12">
         <Alert>
           <AlertDescription>
-            Voce nao tem permissao para preencher o briefing. Apenas owner/admin podem editar.
+            Você não tem permissão para preencher o briefing. Apenas owner/admin podem editar.
           </AlertDescription>
         </Alert>
       </div>
@@ -212,7 +214,7 @@ export function BriefingWizard() {
     } catch { /* ignore — modo privado */ }
     toast({
       title: 'Briefing pendente',
-      description: 'Voce pode completar depois pelo menu. Algumas funcoes ficarao bloqueadas ate finalizar.',
+      description: 'Você pode completar depois pelo menu. Algumas funções ficarao bloqueadas ate finalizar.',
     });
     navigate('/');
   };
@@ -292,9 +294,13 @@ export function BriefingWizard() {
                   } catch {
                     /* ignore */
                   }
+                  // Fire-and-forget: não aguarda, não bloqueia navegação (task 8.2)
+                  if (company?.id) {
+                    triggerArchetypeDetection(company.id).catch(() => { /* silent */ });
+                  }
                   toast({
                     title: 'Tudo pronto',
-                    description: 'Seu perfil de negocio foi salvo. Voce ja pode usar o app.',
+                    description: 'Seu perfil de negocio foi salvo. Você ja pode usar o app.',
                   });
                   navigate('/');
                 }}

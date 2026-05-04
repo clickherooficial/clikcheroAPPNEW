@@ -21,9 +21,10 @@ interface InlineCreative {
 
 interface ChatCreativeGalleryProps {
   ids: string[];
+  onSendSystemMessage?: (text: string) => void;
 }
 
-export function ChatCreativeGallery({ ids }: ChatCreativeGalleryProps) {
+export function ChatCreativeGallery({ ids, onSendSystemMessage }: ChatCreativeGalleryProps) {
   const [items, setItems] = useState<InlineCreative[] | null>(null);
   const [missingIds, setMissingIds] = useState<string[]>([]);
 
@@ -89,13 +90,13 @@ export function ChatCreativeGallery({ ids }: ChatCreativeGalleryProps) {
 
   return (
     <>
-      {items.length > 0 && <CreativeGalleryInline creatives={items} />}
+      {items.length > 0 && <CreativeGalleryInline creatives={items} onSendSystemMessage={onSendSystemMessage} />}
       {missingIds.length > 0 && (
         <div className="flex flex-wrap gap-1 my-2">
           {missingIds.map((id) => (
             <Badge key={id} variant="outline" className="text-[10px] gap-1">
               <AlertCircle className="h-3 w-3" />
-              criativo nao encontrado: {id.slice(0, 8)}
+              criativo não encontrado: {id.slice(0, 8)}
             </Badge>
           ))}
         </div>

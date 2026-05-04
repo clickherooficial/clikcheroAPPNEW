@@ -42,7 +42,7 @@ const AiHealthView = () => {
         <div>
           <h1 className="text-2xl font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
-            Saude do AI
+            Saúde do AI
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             Telemetria de cada chamada do assistente: custo, latencia e falhas.
@@ -73,7 +73,7 @@ const AiHealthView = () => {
 
       {error && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive mb-6">
-          Erro ao carregar metricas: {error}
+          Erro ao carregar métricas: {error}
         </div>
       )}
 
@@ -182,7 +182,7 @@ const AiHealthView = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground/60 py-4 text-center">
-                  Nenhuma tool usada nesse periodo.
+                  Nenhuma tool usada nesse período.
                 </p>
               )}
             </div>
@@ -216,7 +216,7 @@ const AiHealthView = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground/60 py-4 text-center">
-                  Tudo verde. Nenhum erro nos ultimos {data.period_days} dias.
+                  Tudo verde. Nenhum erro nos últimos {data.period_days} dias.
                 </p>
               )}
             </div>

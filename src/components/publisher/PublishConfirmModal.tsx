@@ -21,7 +21,7 @@ export function PublishConfirmModal({ campaign, adset, ad, onCancel, onConfirm }
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Rocket className="w-5 h-5 text-primary" />
-            Confirmar Publicacao
+            Confirmar Públicação
           </DialogTitle>
           <DialogDescription>
             Revise antes de enviar para a Meta. O compliance engine analisara automaticamente.
@@ -49,7 +49,7 @@ export function PublishConfirmModal({ campaign, adset, ad, onCancel, onConfirm }
           </div>
 
           <div className="space-y-1 p-3 rounded-lg border">
-            <div className="text-xs text-muted-foreground">Anuncio</div>
+            <div className="text-xs text-muted-foreground">Anúncio</div>
             <div className="font-semibold">{ad.name}</div>
             <div className="text-sm">{ad.headline}</div>
             <div className="text-xs text-muted-foreground line-clamp-2">{ad.body}</div>

@@ -85,7 +85,7 @@ const DashboardView = () => {
     <div className="mx-auto h-full max-w-[1600px] animate-fade-in space-y-6 overflow-y-auto p-4 md:p-6 xl:p-8">
       <PageHeader
         title="Dashboard"
-        description="Visao geral das campanhas Meta Ads"
+        description="Visão geral das campanhas Meta Ads"
         badge={
           <div className={cn(
             'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium',
@@ -118,7 +118,7 @@ const DashboardView = () => {
       {error && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/60 bg-card p-8 shadow-e1">
           <AlertCircle className="h-6 w-6 text-red-600" />
-          <p className="text-sm text-muted-foreground">Erro ao carregar metricas</p>
+          <p className="text-sm text-muted-foreground">Erro ao carregar métricas</p>
           <Button size="sm" variant="outline" onClick={() => metricsQ.refetch()}>
             <RefreshCw className="h-3.5 w-3.5" />
             Tentar novamente
@@ -150,8 +150,8 @@ const DashboardView = () => {
       {/* Empty state (carregou mas sem dados) */}
       {!error && !loading && currentMetrics.length === 0 && (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
-          <p className="mb-1 text-sm text-foreground/80">Nenhuma metrica no periodo selecionado.</p>
-          <p className="text-xs text-muted-foreground">Va em Integracoes e clique em Sincronizar, ou escolha outro periodo.</p>
+          <p className="mb-1 text-sm text-foreground/80">Nenhuma métrica no período selecionado.</p>
+          <p className="text-xs text-muted-foreground">Va em Integrações e clique em Sincronizar, ou escolha outro período.</p>
         </div>
       )}
     </div>

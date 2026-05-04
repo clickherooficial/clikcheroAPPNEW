@@ -7,13 +7,13 @@ const UNIT_LABELS: Record<string, string> = {
   OUTCOME_LEADS: 'leads',
   OUTCOME_SALES: 'vendas',
   OUTCOME_TRAFFIC: 'visitantes',
-  OUTCOME_ENGAGEMENT: 'interacoes',
+  OUTCOME_ENGAGEMENT: 'interações',
 };
 
 const DATA_SOURCE_LABELS: Record<string, string> = {
-  tenant_history: 'Historico do tenant',
+  tenant_history: 'Histórico do tenant',
   market_fallback: 'Benchmark de mercado',
-  mixed: 'Historico limitado + mercado',
+  mixed: 'Histórico limitado + mercado',
 };
 
 interface Props {
@@ -22,19 +22,19 @@ interface Props {
 }
 
 export function RecommendationCard({ recommendation: r, objective }: Props) {
-  const unit = UNIT_LABELS[objective] ?? 'conversoes';
+  const unit = UNIT_LABELS[objective] ?? 'conversões';
 
   return (
     <Card className="border-primary/30 bg-primary/5">
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Recomendacao da IA</h3>
+          <h3 className="text-lg font-semibold">Recomendação da IA</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Orcamento recomendado</div>
+            <div className="text-xs text-muted-foreground">Orçamento recomendado</div>
             <div className="text-2xl font-bold text-primary">R$ {r.recommended_budget_weekly.toLocaleString('pt-BR')}</div>
             <div className="text-xs text-muted-foreground">por semana (R$ {r.recommended_daily.toFixed(2)}/dia)</div>
           </div>

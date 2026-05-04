@@ -89,7 +89,7 @@ function AttachmentPreview({ item, onRemove }: AttachmentPreviewProps) {
           {isExtractionFailed && (
             <>
               <AlertCircle className="h-2.5 w-2.5 ml-0.5 text-amber-500" />
-              <span className="text-amber-600">conteudo nao lido</span>
+              <span className="text-amber-600">conteudo não lido</span>
             </>
           )}
           {isReady && !isExtractionFailed && (

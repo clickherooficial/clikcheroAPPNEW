@@ -36,10 +36,10 @@ export function ComplianceActionCard({ action }: Props) {
           {prohibition && (
             <div>
               <div className="text-sm font-medium text-foreground">
-                Proibicao adicionada: <span className="text-violet-300">"{prohibition.value}"</span>
+                Proibição adicionada: <span className="text-violet-300">"{prohibition.value}"</span>
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Aparece em <strong>Compliance</strong> e <strong>Configuracoes → Identidade</strong>.
+                Aparece em <strong>Compliance</strong> e <strong>Configurações → Identidade</strong>.
                 Novos criativos com isso sao bloqueados automaticamente.
               </div>
             </div>
@@ -73,7 +73,7 @@ export function ComplianceActionCard({ action }: Props) {
               )}
               {hasViolations && (
                 <div className="text-[11px] text-amber-300 pt-1">
-                  Veja detalhes em Compliance ou peca uma analise dos afetados.
+                  Veja detalhes em Compliance ou peca uma análise dos afetados.
                 </div>
               )}
             </div>

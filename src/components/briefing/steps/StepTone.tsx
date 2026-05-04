@@ -11,6 +11,7 @@ import type { EmotionalTone, ToneData, ToneScale } from '@/types/briefing';
 interface Props {
   initial: ToneData;
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onSubmit: (tone: ToneData) => void;
   onBack: () => void;
 }
@@ -24,7 +25,7 @@ const EMOTIONAL_OPTIONS: { value: EmotionalTone; label: string }[] = [
   { value: 'rational', label: 'Racional' },
 ];
 
-export function StepTone({ initial, disabled, onSubmit, onBack }: Props) {
+export function StepTone({ initial, disabled, mode = 'wizard', onSubmit, onBack }: Props) {
   const [formality, setFormality] = useState<ToneScale>(initial.formality ?? 3);
   const [technicality, setTechnicality] = useState<ToneScale>(initial.technicality ?? 3);
   const [emotional, setEmotional] = useState<EmotionalTone[]>(initial.emotional ?? []);
@@ -49,7 +50,7 @@ export function StepTone({ initial, disabled, onSubmit, onBack }: Props) {
 
       <div>
         <Label>Tecnicidade ({technicality}/5)</Label>
-        <p className="text-xs text-muted-foreground mb-2">1 = simples · 5 = jargao tecnico</p>
+        <p className="text-xs text-muted-foreground mb-2">1 = simples · 5 = jargao técnico</p>
         <Slider min={1} max={5} step={1} value={[technicality]} onValueChange={(v) => setTechnicality((v[0] ?? 3) as ToneScale)} disabled={disabled} />
       </div>
 
@@ -74,19 +75,21 @@ export function StepTone({ initial, disabled, onSubmit, onBack }: Props) {
           Que frases você sempre quer usar no final dos anúncios. Como você pede a venda para seu cliente?
         </Label>
         <p className="text-xs text-muted-foreground mb-2">
-          Adicione ate 10 trechos que funcionam como chamada final ou fechamento para o seu tipo de anuncio.
+          Adicione ate 10 trechos que funcionam como chamada final ou fechamento para o seu tipo de anúncio.
         </p>
         <TagInput value={ctas} onChange={setCtas} placeholder='Ex: "Quero garantir meu lugar"' disabled={disabled} max={10} />
       </div>
 
       <div>
-        <Label>Frases ou palavras que voce NAO quer ver na sua copy</Label>
-        <p className="text-xs text-muted-foreground mb-2">Termos batidos, claims arriscados ou palavras que nao combinam com sua marca</p>
+        <Label>Frases ou palavras que você Não quer ver na sua copy</Label>
+        <p className="text-xs text-muted-foreground mb-2">Termos batidos, claims arriscados ou palavras que não combinam com sua marca</p>
         <TagInput value={forbidden} onChange={setForbidden} placeholder="Ex: garantia, milagre, comprovado" disabled={disabled} max={20} />
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+      <div className={mode === 'settings' ? 'flex justify-end pt-4' : 'flex justify-between pt-4'}>
+        {mode !== 'settings' && (
+          <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+        )}
         <Button
           disabled={disabled}
           onClick={() =>
@@ -99,7 +102,7 @@ export function StepTone({ initial, disabled, onSubmit, onBack }: Props) {
             })
           }
         >
-          Continuar
+          {mode === 'settings' ? 'Salvar alteracoes' : 'Continuar'}
         </Button>
       </div>
     </div>

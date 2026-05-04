@@ -5,7 +5,7 @@ const OBJECTIVES = [
   { key: 'OUTCOME_LEADS', label: 'Leads', description: 'Capturar contatos qualificados', icon: Users, color: 'text-blue-400 bg-blue-500/10' },
   { key: 'OUTCOME_SALES', label: 'Vendas', description: 'Converter em vendas diretas', icon: ShoppingCart, color: 'text-emerald-400 bg-emerald-500/10' },
   { key: 'OUTCOME_TRAFFIC', label: 'Trafego', description: 'Atrair visitantes ao site', icon: Target, color: 'text-amber-400 bg-amber-500/10' },
-  { key: 'OUTCOME_ENGAGEMENT', label: 'Engajamento', description: 'Aumentar interacoes', icon: Heart, color: 'text-pink-400 bg-pink-500/10' },
+  { key: 'OUTCOME_ENGAGEMENT', label: 'Engajamento', description: 'Aumentar interações', icon: Heart, color: 'text-pink-400 bg-pink-500/10' },
 ];
 
 interface Props {
@@ -18,7 +18,7 @@ export function ObjectiveStep({ value, onChange }: Props) {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold mb-1">Qual e o seu objetivo?</h3>
-        <p className="text-sm text-muted-foreground">A IA vai calcular o orcamento ideal baseado nisso.</p>
+        <p className="text-sm text-muted-foreground">A IA vai calcular o orçamento ideal baseado nisso.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

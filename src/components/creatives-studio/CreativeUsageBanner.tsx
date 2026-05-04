@@ -26,14 +26,14 @@ export function CreativeUsageBanner() {
       {isBlocked ? <ShieldAlert className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
       <AlertTitle>
         {isBlocked
-          ? 'Quota de geracao atingida'
-          : 'Quota de geracao perto do limite'}
+          ? 'Quota de geração atingida'
+          : 'Quota de geração perto do limite'}
       </AlertTitle>
       <AlertDescription className="space-y-1">
         <p>
           {isBlocked
-            ? `Voce atingiu 100% de ${labels}. Novas geracoes ficam bloqueadas ate fazer upgrade ou virar o ciclo.`
-            : `Voce esta usando >=80% de ${labels}. Considere fazer upgrade ou descartar criativos antigos.`}
+            ? `Você atingiu 100% de ${labels}. Novas gerações ficam bloqueadas ate fazer upgrade ou virar o ciclo.`
+            : `Você esta usando >=80% de ${labels}. Considere fazer upgrade ou descartar criativos antigos.`}
         </p>
         <p className="text-xs">
           {usage.daily.count} / {usage.daily.max} hoje ·{' '}

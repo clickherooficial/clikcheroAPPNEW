@@ -12,8 +12,8 @@ import type { PlanWithSteps } from '@/hooks/use-plans';
 
 const ACTION_META: Record<ApprovalActionType, { icon: typeof Pause; color: string; label: string }> = {
   pause_campaign: { icon: Pause, color: 'text-orange-400', label: 'Pausar' },
-  pause_ad: { icon: Pause, color: 'text-orange-400', label: 'Pausar anuncio' },
-  reactivate_ad: { icon: Play, color: 'text-emerald-400', label: 'Reativar anuncio' },
+  pause_ad: { icon: Pause, color: 'text-orange-400', label: 'Pausar anúncio' },
+  reactivate_ad: { icon: Play, color: 'text-emerald-400', label: 'Reativar anúncio' },
   reactivate_campaign: { icon: Play, color: 'text-emerald-400', label: 'Reativar' },
   update_budget: { icon: DollarSign, color: 'text-sky-400', label: 'Budget' },
 };
@@ -124,7 +124,7 @@ function InlinePlanCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-medium uppercase tracking-wider text-primary">
-            Plano com {plan.steps.length} acoes
+            Plano com {plan.steps.length} ações
           </div>
           <div className="text-[13px] font-medium text-foreground mt-0.5">
             {plan.human_summary}

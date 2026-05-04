@@ -1,6 +1,8 @@
 // Tipos do dominio briefing-onboarding.
 // Spec: .kiro/specs/briefing-onboarding/
 
+import type { Archetype } from '@/types/business-archetype';
+
 export type BriefingStatus = 'not_started' | 'incomplete' | 'complete';
 export type ToneScale = 1 | 2 | 3 | 4 | 5;
 export type EmotionalTone =
@@ -61,6 +63,7 @@ export interface CompanyBriefing {
   tone: ToneData;
   palette: PaletteData;
   status: BriefingStatus;
+  business_archetype: Archetype | null;
   created_at: string;
   updated_at: string;
 }

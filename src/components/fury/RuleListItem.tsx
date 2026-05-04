@@ -33,7 +33,7 @@ export function RuleListItem({ table, id, name, description, is_enabled, origin,
   };
 
   const onDelete = async () => {
-    if (!confirm(`Excluir regra "${name}"? Esta acao nao pode ser desfeita.`)) return;
+    if (!confirm(`Excluir regra "${name}"? Esta ação não pode ser desfeita.`)) return;
     try {
       await del.mutateAsync({ table, id });
       toast({ title: 'Regra excluida' });

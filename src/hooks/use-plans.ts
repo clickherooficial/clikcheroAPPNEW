@@ -10,7 +10,10 @@ export type PlanStatus =
   | 'expired'
   | 'executed'
   | 'partial'
-  | 'failed';
+  | 'failed'
+  | 'running'
+  | 'rolled_back'
+  | 'aborted';
 
 export interface Plan {
   id: string;
@@ -25,6 +28,10 @@ export interface Plan {
   decided_by: string | null;
   decided_at: string | null;
   executed_at: string | null;
+  started_at?: string | null;
+  executed_steps_count?: number;
+  failed_at_step?: number | null;
+  ledger_ids?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -63,8 +70,12 @@ export function usePlans() {
   }, [load]);
 
   useEffect(() => {
+    // Channel name unico por mount (evita "cannot add callbacks after subscribe" em StrictMode)
+    const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
     const channel = supabase
-      .channel('plans-changes')
+      .channel(`plans-changes-${uniqueId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'plans' },
@@ -138,6 +149,59 @@ export function usePlans() {
   const pending = plansWithSteps.filter((p) => p.status === 'pending');
   const history = plansWithSteps.filter((p) => p.status !== 'pending');
 
+  // Sprint 5: executar plano aprovado sequencialmente via agent-plan-execute
+  const executeNow = useCallback(
+    async (planId: string) => {
+      setDecidingId(planId);
+      try {
+        const { data, error } = await supabase.functions.invoke('agent-plan-execute', {
+          body: { plan_id: planId },
+        });
+        if (error) throw new Error(error.message);
+        const status = (data?.status ?? 'failed') as PlanStatus;
+        if (status === 'executed') {
+          toast({ title: 'Plano executado', description: `${data.executed}/${data.total} passos OK` });
+        } else if (status === 'partial') {
+          toast({
+            title: 'Plano parcial',
+            description: `${data.executed}/${data.total} OK, falhou no step ${data.failed_at_step}: ${data.last_error}`,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Plano falhou',
+            description: data?.last_error ?? data?.error ?? 'erro desconhecido',
+            variant: 'destructive',
+          });
+        }
+        await load();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+        toast({ title: 'Falha ao executar plano', description: msg, variant: 'destructive' });
+      } finally {
+        setDecidingId(null);
+      }
+    },
+    [toast, load],
+  );
+
+  const abort = useCallback(
+    async (planId: string) => {
+      const { error } = await supabase
+        .from('plans' as never)
+        .update({ status: 'aborted' })
+        .eq('id', planId)
+        .eq('status', 'running');
+      if (error) {
+        toast({ title: 'Falha ao abortar', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Plano abortado' });
+        await load();
+      }
+    },
+    [toast, load],
+  );
+
   return {
     plans: plansWithSteps,
     pending,
@@ -145,5 +209,7 @@ export function usePlans() {
     isLoading,
     decidingId,
     decide,
+    executeNow,
+    abort,
   };
 }

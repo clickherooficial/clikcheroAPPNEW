@@ -41,7 +41,7 @@ const Login = () => {
       }
       navigate('/');
     } catch {
-      toast({ title: 'Erro ao entrar', description: 'Erro de conexao. Tente novamente.', variant: 'destructive' });
+      toast({ title: 'Erro ao entrar', description: 'Erro de conexão. Tente novamente.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }

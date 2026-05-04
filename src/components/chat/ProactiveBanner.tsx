@@ -14,7 +14,7 @@ export function ProactiveBanner({ onAsk }: Props) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Analisando suas memorias e metricas...
+        Analisando suas memórias e métricas...
       </div>
     );
   }
@@ -103,13 +103,13 @@ function InsightCard({
 function buildPrompt(insight: BriefingInsight): string {
   switch (insight.kind) {
     case 'compliance_alert':
-      return `Tenho ${insight.title.toLowerCase()}. Quais sao os anuncios afetados, qual o problema de cada um e o que voce sugere fazer?`;
+      return `Tenho ${insight.title.toLowerCase()}. Quais sao os anúncios afetados, qual o problema de cada um e o que você sugere fazer?`;
     case 'metric_drop':
       return `Notei que ${insight.title.toLowerCase()}. Pode investigar o que causou essa queda e sugerir o que fazer?`;
     case 'metric_jump':
       return `${insight.title}. Pode analisar o que esta funcionando e como amplificar esse resultado?`;
     case 'pending_actions':
-      return 'Tem acoes pendentes na fila de aprovacoes. Pode revisar e me explicar cada uma?';
+      return 'Tem ações pendentes na fila de aprovações. Pode revisar e me explicar cada uma?';
     case 'memory':
       return `Sobre o que mencionei antes: "${insight.body}". Como isso esta agora?`;
     default:

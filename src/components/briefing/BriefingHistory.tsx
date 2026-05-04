@@ -44,7 +44,7 @@ export function BriefingHistory() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <History className="h-4 w-4" /> Historico de alteracoes
+          <History className="h-4 w-4" /> Histórico de alteracoes
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -62,7 +62,7 @@ export function BriefingHistory() {
                   {formatDistanceToNow(new Date(h.changed_at), { addSuffix: true, locale: ptBR })}
                 </span>
                 <Button size="sm" variant="ghost" onClick={() => setOpenSnapshot(h)}>
-                  Ver versao
+                  Ver versão
                 </Button>
               </li>
             ))}
@@ -74,7 +74,7 @@ export function BriefingHistory() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>
-              Versao de{' '}
+              Versão de{' '}
               {openSnapshot &&
                 formatDistanceToNow(new Date(openSnapshot.changed_at), {
                   addSuffix: true,

@@ -22,6 +22,7 @@ import {
   rescanCompliance,
   proposeUpdateBudget,
   proposePlan,
+  searchKnowledge,
   type ComplianceActionCapture,
 } from '../_shared/data-fetchers.ts';
 import { generateReport } from '../_shared/report-generators.ts';
@@ -31,6 +32,29 @@ import {
   invokeCreativeAdapt,
 } from '../_shared/creative-tool-handlers.ts';
 import { invokeSpecialist } from '../_shared/specialist-invoker.ts';
+import { handleProposeCampaign } from '../_shared/propose-campaign-handler.ts';
+import { handlePublishCampaign } from '../_shared/publish-campaign-handler.ts';
+import {
+  executeUpdateCampaign,
+  executeUpdateAdset,
+  executeUpdateAd,
+  executeShiftBudget,
+  executeChangeSchedule,
+} from '../_shared/edits-tool-handlers.ts';
+import {
+  executeCreateCustomerListAudience,
+  executeCreateLookalike,
+  executeUpdateAudience,
+  executeDeleteAudience,
+  executeCreatePixelAudience,
+  executeCreateEngagementAudience,
+} from '../_shared/audience-tool-handlers.ts';
+import { executeExecutePlan } from '../_shared/plan-execute-handler.ts';
+import { listCatalogsHandler } from '../_shared/catalogs-handler.ts';
+import { startAbTest, getAbTests, evaluateAbTest } from '../_shared/ab-test-handlers.ts';
+import { getAdAccounts, setPreferredAdAccount } from '../_shared/agency-handlers.ts';
+import { readArchetype, type Archetype } from '../_shared/archetype-reader.ts';
+import { getArchetypeBlock } from '../_shared/prompt-archetype-blocks.ts';
 
 const MAX_HISTORY_MESSAGES = 20;
 const OPENAI_URL = 'https://api.openai.com/v1';
@@ -93,6 +117,9 @@ function isShortAffirmativeConsent(text: string): boolean {
 
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
+  const reqId = crypto.randomUUID().slice(0, 8);
+  const t0 = Date.now();
+  console.log(`[ai-chat:${reqId}] received ${req.method} from origin=${req.headers.get('origin') ?? 'none'}`);
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: cors });
@@ -126,8 +153,13 @@ Deno.serve(async (req) => {
     }
 
     // Parse body
-    const { message, conversation_id, attachment_ids } = await req.json();
+    const { message, conversation_id, attachment_ids, client_metadata } = await req.json();
     const attachmentIds: string[] = Array.isArray(attachment_ids) ? attachment_ids.filter((x) => typeof x === 'string') : [];
+    // Task 9.1: metadata enviado pelo cliente (ex.: { source: 'quickstart_card', card_id, business_archetype })
+    const clientMetadata: Record<string, unknown> | null =
+      client_metadata && typeof client_metadata === 'object' && !Array.isArray(client_metadata)
+        ? (client_metadata as Record<string, unknown>)
+        : null;
 
     if ((!message || typeof message !== 'string') && attachmentIds.length === 0) {
       return new Response(
@@ -161,6 +193,17 @@ Deno.serve(async (req) => {
       companyId = company?.id ?? null;
     }
 
+    // ============ BUSINESS ARCHETYPE (Task 6.2) ============
+    // Le business_archetype do briefing pra appendar bloco persona ao SYSTEM_PROMPT.
+    // Usa supabaseUser (anon + JWT) — RLS aplicada automaticamente.
+    // Flag ENABLE_ARCHETYPE_PERSONAS=false desativa em runtime sem deploy.
+    const enablePersonas = Deno.env.get('ENABLE_ARCHETYPE_PERSONAS') !== 'false';
+    let archetype: Archetype | null = null;
+    if (enablePersonas && companyId) {
+      archetype = await readArchetype(supabaseUser, companyId);
+    }
+    const archetypeBlock = archetype ? getArchetypeBlock(archetype) : '';
+
     // Get or create conversation
     let convId = conversation_id;
     if (!convId) {
@@ -179,11 +222,14 @@ Deno.serve(async (req) => {
     // Save user message (capturando id pra vincular anexos)
     let userMessageId: string | null = null;
     if (convId) {
+      const userMetaParts: Record<string, unknown> = {};
+      if (attachmentIds.length > 0) userMetaParts.attachments = attachmentIds;
+      if (clientMetadata) Object.assign(userMetaParts, clientMetadata);
       const { data: insertedMsg } = await supabaseAdmin.from('chat_messages').insert({
         conversation_id: convId,
         role: 'user',
         content: message,
-        metadata: attachmentIds.length > 0 ? { attachments: attachmentIds } : null,
+        metadata: Object.keys(userMetaParts).length > 0 ? userMetaParts : null,
       }).select('id').single();
       userMessageId = insertedMsg?.id ?? null;
     }
@@ -403,7 +449,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    let systemContent = SYSTEM_PROMPT + memoryContext + summaryContext + briefingHint + briefingContext + behaviorRulesContext;
+    // Task 6.2: SYSTEM_PROMPT base preservado. archetypeBlock appendado quando arquetipo conhecido + flag ON.
+    const baseSystemPrompt = archetypeBlock ? `${SYSTEM_PROMPT}\n\n${archetypeBlock}` : SYSTEM_PROMPT;
+    let systemContent = baseSystemPrompt + memoryContext + summaryContext + briefingHint + briefingContext + behaviorRulesContext;
 
     // Construir user content (text-only OU multimodal)
     type ContentPart =
@@ -476,6 +524,8 @@ Deno.serve(async (req) => {
           status: 'running',
           model: MODEL_NAME,
           started_at: new Date(runStart).toISOString(),
+          // Task 9.2: business_archetype no metadata pra analise por arquetipo
+          metadata: { business_archetype: archetype ?? null },
         })
         .select('id')
         .single();
@@ -562,6 +612,7 @@ Deno.serve(async (req) => {
                     runStart,
                     runId,
                     specialistBriefingContext,
+                    archetype,
                   },
                 );
                 toolResults.push({ tool_call_id: tc.id, role: 'tool', content: result });
@@ -626,6 +677,30 @@ Deno.serve(async (req) => {
               }
               if (tagsToAppend.length > 0) {
                 const appendix = '\n\n' + tagsToAppend.join('\n');
+                assistantContent += appendix;
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: appendix })}\n\n`));
+              }
+
+              // Mesma logica pra <campaign-proposal id="..."/> — chat-publish-flow.
+              // LLM tende a parafrasear texto e descartar a tag XML, entao garantimos
+              // que cada tag presente em tool result tambem esta no assistantContent.
+              const proposalRegex = /<campaign-proposal\s+id="([^"]+)"\s*\/?>/g;
+              const existingProposalIds = new Set<string>();
+              for (const m of assistantContent.matchAll(proposalRegex)) {
+                existingProposalIds.add(m[1].trim());
+              }
+              const proposalTagsToAppend: string[] = [];
+              for (const tr of toolResults) {
+                for (const m of tr.content.matchAll(proposalRegex)) {
+                  const id = m[1].trim();
+                  if (id && !existingProposalIds.has(id)) {
+                    proposalTagsToAppend.push(`<campaign-proposal id="${id}"/>`);
+                    existingProposalIds.add(id);
+                  }
+                }
+              }
+              if (proposalTagsToAppend.length > 0) {
+                const appendix = '\n\n' + proposalTagsToAppend.join('\n');
                 assistantContent += appendix;
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: appendix })}\n\n`));
               }
@@ -725,6 +800,7 @@ Deno.serve(async (req) => {
       },
     });
 
+    console.log(`[ai-chat:${reqId}] returning SSE stream after ${Date.now() - t0}ms`);
     return new Response(readable, {
       headers: {
         ...cors,
@@ -734,9 +810,13 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    const err = error as Error;
+    console.error(`[ai-chat:${reqId}] Unexpected error after ${Date.now() - t0}ms:`, err?.message, err?.stack);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({
+        error: err?.message || 'Internal server error',
+        stack: err?.stack?.split('\n').slice(0, 6).join('\n'),
+      }),
       { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
@@ -770,6 +850,7 @@ async function executeTool(
     runStart: number;
     runId: string | null;
     specialistBriefingContext?: string;
+    archetype?: Archetype | null;
   },
 ): Promise<string> {
   try {
@@ -885,6 +966,59 @@ async function executeTool(
         return await addProhibition(supabase, companyId, args as { category?: 'word' | 'topic' | 'visual'; value?: string }, ctx?.complianceActionRef);
       case 'rescan_compliance':
         return await rescanCompliance(authHeader, args as { mode?: 'active_only' | 'all' }, ctx?.complianceActionRef);
+      case 'propose_campaign':
+        // Task 6.3: archetype propagado pro handler (resolveDefaults + generateCopy)
+        return await handleProposeCampaign(
+          supabase,
+          companyId,
+          convIdForTools,
+          ctx?.userMessageId ?? null,
+          args,
+          ctx?.archetype ?? null,
+        );
+      case 'update_campaign':
+        return await executeUpdateCampaign(authHeader, args);
+      case 'update_adset':
+        return await executeUpdateAdset(authHeader, args);
+      case 'update_ad':
+        return await executeUpdateAd(authHeader, args);
+      case 'shift_budget':
+        return await executeShiftBudget(authHeader, args);
+      case 'change_schedule':
+        return await executeChangeSchedule(authHeader, args);
+      case 'create_customer_list_audience':
+        return await executeCreateCustomerListAudience(authHeader, args);
+      case 'create_lookalike_audience':
+        return await executeCreateLookalike(authHeader, args);
+      case 'update_audience':
+        return await executeUpdateAudience(authHeader, args);
+      case 'delete_audience':
+        return await executeDeleteAudience(authHeader, args);
+      case 'create_pixel_audience':
+        return await executeCreatePixelAudience(authHeader, args);
+      case 'create_engagement_audience':
+        return await executeCreateEngagementAudience(authHeader, args);
+      case 'execute_plan':
+        return await executeExecutePlan(authHeader, args);
+      case 'list_catalogs':
+        return await listCatalogsHandler(supabase, companyId);
+      case 'start_ab_test':
+        return await startAbTest(supabase, companyId, args);
+      case 'get_ab_tests':
+        return await getAbTests(supabase, companyId);
+      case 'evaluate_ab_test':
+        return await evaluateAbTest(authHeader, args);
+      case 'get_ad_accounts':
+        return await getAdAccounts(supabase, companyId);
+      case 'set_preferred_ad_account':
+        return await setPreferredAdAccount(supabase, companyId, args);
+      case 'publish_campaign':
+        return await handlePublishCampaign(
+          supabase,
+          companyId,
+          authHeader,
+          args,
+        );
       default:
         return `Funcao "${name}" nao reconhecida.`;
     }
@@ -962,6 +1096,11 @@ async function handleProposeRule(
           .download(imgAttachment.storage_path);
         if (!dlErr && srcBlob) {
           const bytes = new Uint8Array(await srcBlob.arrayBuffer());
+          // Captain America: validar tamanho antes de subir (bucket rejeita >5MB, mas falhamos cedo com mensagem clara)
+          if (bytes.length > 5 * 1024 * 1024) {
+            console.warn('[propose_rule] asset move skipped: file exceeds 5MB limit');
+            throw new Error('Asset file exceeds 5MB limit');
+          }
           const { error: upErr } = await supabase.storage
             .from('pipeline-assets')
             .upload(newPath, bytes, { contentType: imgAttachment.mime_type, upsert: false });
@@ -1148,77 +1287,7 @@ async function handleSyncMetaAssets(
   ].join('\n');
 }
 
-// knowledge-base-rag: busca semantica em documentos do cliente.
-// Gera embedding da query, chama RPC search_knowledge, formata resultado
-// com refs [doc:X#chunk:Y] para a IA citar.
-async function searchKnowledge(
-  supabase: ReturnType<typeof createClient>,
-  companyId: string,
-  args: { query: string; top_k?: number; filters?: Record<string, unknown> },
-): Promise<string> {
-  if (!companyId) return 'Sem empresa associada — search_knowledge indisponivel.';
-  if (!args.query || args.query.trim().length < 3) {
-    return 'Query muito curta para busca semantica. Forneca uma pergunta com mais contexto.';
-  }
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openaiKey) return 'OpenAI nao configurado — search_knowledge indisponivel.';
-
-  // Gera embedding da query
-  const embResp = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
-    body: JSON.stringify({ model: 'text-embedding-3-small', input: args.query }),
-  });
-  if (!embResp.ok) {
-    return `Falha ao gerar embedding (${embResp.status})`;
-  }
-  const embJson = await embResp.json();
-  const queryEmbedding = embJson.data?.[0]?.embedding as number[] | undefined;
-  if (!queryEmbedding) return 'Embedding malformado.';
-
-  const topK = Math.max(1, Math.min(20, args.top_k ?? 8));
-  const queryPreview = args.query.slice(0, 200);
-
-  const { data, error } = await supabase.rpc('search_knowledge', {
-    p_company_id: companyId,
-    p_query_embedding: queryEmbedding,
-    p_top_k: topK,
-    p_filters: args.filters ?? {},
-    p_query_preview: queryPreview,
-  });
-  if (error) return `Erro na busca: ${error.message}`;
-
-  const rows = (data as Array<{
-    chunk_id: string;
-    document_id: string;
-    document_title: string;
-    document_type: string;
-    chunk_text: string;
-    chunk_index: number;
-    page_number: number | null;
-    score: number;
-    is_source_of_truth: boolean;
-  }>) ?? [];
-
-  if (rows.length === 0) {
-    return 'Nenhum documento relevante encontrado na memoria do cliente para esta query.';
-  }
-
-  // Formata para a IA: cada chunk com ref pronta para citacao
-  const lines = rows.map((r, i) => {
-    const snippet = r.chunk_text.length > 600 ? r.chunk_text.slice(0, 600) + '...' : r.chunk_text;
-    const sotMark = r.is_source_of_truth ? ' [fonte de verdade]' : '';
-    const pageMark = r.page_number ? ` p.${r.page_number}` : '';
-    return `### Resultado ${i + 1} — ${r.document_title} (${r.document_type}${pageMark})${sotMark}\nRef: [doc:${r.document_id}#chunk:${r.chunk_index}]\nScore: ${r.score.toFixed(3)}\n\n${snippet}`;
-  });
-
-  return [
-    `Encontrados ${rows.length} trechos relevantes na memoria do cliente.`,
-    'IMPORTANTE: ao usar qualquer trecho na resposta, cite a Ref no formato [doc:UUID#chunk:N] como vem nos resultados. NUNCA invente refs.',
-    '',
-    ...lines,
-  ].join('\n');
-}
+// searchKnowledge moveu pra ../_shared/data-fetchers.ts (compartilhada com creative-specialist)
 
 interface MemoryRecord {
   id: string;

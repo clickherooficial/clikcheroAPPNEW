@@ -20,11 +20,11 @@ export interface AdsetData {
 
 const OPT_GOALS: Record<string, string> = {
   LINK_CLICKS: 'Cliques no Link',
-  LANDING_PAGE_VIEWS: 'Visualizacoes de Pagina',
-  CONVERSIONS: 'Conversoes',
+  LANDING_PAGE_VIEWS: 'Visualizações de Página',
+  CONVERSIONS: 'Conversões',
   REACH: 'Alcance',
   IMPRESSIONS: 'Impressoes',
-  LEAD_GENERATION: 'Geracao de Leads',
+  LEAD_GENERATION: 'Geração de Leads',
 };
 
 interface Props {
@@ -44,7 +44,7 @@ export function AdsetStep({ data, onChange }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Orcamento Diario (R$) *</Label>
+          <Label>Orçamento Diario (R$) *</Label>
           <Input
             type="number"
             min={10}
@@ -56,10 +56,10 @@ export function AdsetStep({ data, onChange }: Props) {
             }}
             placeholder="10.00"
           />
-          <p className="text-xs text-muted-foreground">Minimo R$ 10,00 (limite Meta para BRL)</p>
+          <p className="text-xs text-muted-foreground">Mínimo R$ 10,00 (limite Meta para BRL)</p>
         </div>
         <div className="space-y-1.5">
-          <Label>Objetivo de Otimizacao</Label>
+          <Label>Objetivo de Otimização</Label>
           <Select value={data.optimization_goal} onValueChange={(v) => set('optimization_goal', v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>

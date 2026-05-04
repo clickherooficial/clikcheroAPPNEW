@@ -11,7 +11,7 @@ import { ptBR } from 'date-fns/locale';
 const ACTION_STYLES: Record<string, { label: string; className: string; Icon: typeof PauseCircle }> = {
   pause: { label: 'Pausar', className: 'bg-red-500/15 text-red-400 border-red-500/30', Icon: PauseCircle },
   alert: { label: 'Alerta', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30', Icon: AlertTriangle },
-  suggest: { label: 'Sugestao', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30', Icon: TrendingUp },
+  suggest: { label: 'Sugestão', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30', Icon: TrendingUp },
   revert: { label: 'Revertido', className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', Icon: RotateCcw },
 };
 
@@ -93,7 +93,7 @@ export function FuryActionFeed() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Acoes recentes</h3>
+        <h3 className="text-sm font-semibold">Ações recentes</h3>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[160px]">
             <SelectValue />
@@ -111,7 +111,7 @@ export function FuryActionFeed() {
         <Card>
           <CardContent className="p-12 text-center">
             <Zap className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma acao ainda</h3>
+            <h3 className="text-lg font-semibold mb-2">Nenhuma ação ainda</h3>
             <p className="text-sm text-muted-foreground">O FURY avalia campanhas automaticamente a cada hora. Clique "Avaliar Agora" para rodar manualmente.</p>
           </CardContent>
         </Card>

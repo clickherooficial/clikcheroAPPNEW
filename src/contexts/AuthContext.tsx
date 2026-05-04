@@ -264,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('[signUp] signIn pos-signup falhou:', signInError);
         return {
           error:
-            'Conta criada! Verifique seu email para confirmar o cadastro e depois faca login para completar a configuracao da organizacao.',
+            'Conta criada! Verifique seu email para confirmar o cadastro e depois faca login para completar a configuração da organização.',
         };
       }
       accessToken = signInData.session.access_token;
@@ -302,11 +302,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) {
         const detail = bodyJson.error || `HTTP ${res.status}`;
         console.error('[signUp] create-organization failed:', { status: res.status, body: bodyJson });
-        return { error: `Falha ao criar organizacao: ${detail}` };
+        return { error: `Falha ao criar organização: ${detail}` };
       }
     } catch (fetchError) {
       console.error('[signUp] create-organization fetch threw:', fetchError);
-      return { error: 'Erro de rede ao criar organizacao. Tente novamente.' };
+      return { error: 'Erro de rede ao criar organização. Tente novamente.' };
     }
 
     // 3. Post-creation updates (non-blocking — if these fail we still consider signup OK)

@@ -1,4 +1,4 @@
-import { MessageSquare, BarChart3, ImagePlus, Brain, ShieldAlert, Plus, Plug, Activity, Rocket, ShieldCheck } from "lucide-react";
+import { MessageSquare, BarChart3, ImagePlus, Brain, ShieldAlert, Plug, Activity, Rocket, ShieldCheck, Sparkles, Shield, Sliders, Users, ListChecks, Package, GitBranch } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -7,8 +7,9 @@ import { OrganizationSwitcher } from "@/components/auth/OrganizationSwitcher";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { Logo } from "@/components/shared/Logo";
 import { useCreativeUsage } from "@/hooks/use-creative-usage";
+import { useSafetyStatus } from "@/hooks/use-safety";
 
-type View = "chat" | "painel" | "criativos" | "cerebro" | "approvals" | "ai-health" | "compliance" | "publisher";
+type View = "chat" | "painel" | "criativos" | "cerebro" | "approvals" | "ai-health" | "compliance" | "publisher" | "safety" | "optimization" | "audiences" | "plans" | "catalogs" | "ab-tests";
 
 interface AppSidebarProps {
   currentView: View;
@@ -17,17 +18,23 @@ interface AppSidebarProps {
 
 // 5 itens principais — sidebar enxuta com nomes em linguagem de usuario
 const navItems: { id: View; label: string; icon: React.ElementType; helper?: string }[] = [
-  { id: "chat", label: "Meus anúncios", icon: MessageSquare, helper: "Chat e acoes para seus anúncios" },
-  { id: "painel", label: "Painel", icon: BarChart3, helper: "KPIs, analise e orcamento" },
-  { id: "criativos", label: "Criativos", icon: ImagePlus, helper: "Anuncios criados pela IA e da Meta" },
-  { id: "cerebro", label: "Configuracoes", icon: Brain, helper: "Regras, memoria e identidade" },
-  { id: "approvals", label: "Aprovacoes", icon: ShieldAlert, helper: "Acoes pendentes de aprovacao" },
+  { id: "chat", label: "Meus anúncios", icon: MessageSquare, helper: "Chat e ações para seus anúncios" },
+  { id: "painel", label: "Painel", icon: BarChart3, helper: "KPIs, análise e orçamento" },
+  { id: "criativos", label: "Criativos", icon: ImagePlus, helper: "Anúncios criados pela IA e da Meta" },
+  { id: "cerebro", label: "Configurações", icon: Brain, helper: "Regras, memória e identidade" },
+  { id: "approvals", label: "Aprovações", icon: ShieldAlert, helper: "Ações pendentes de aprovação" },
 ];
 
 // Itens secundarios (footer)
 const secondaryItems: { id: View; label: string; icon: React.ElementType }[] = [
   { id: "compliance", label: "Compliance", icon: ShieldCheck },
   { id: "publisher", label: "Publicar campanha", icon: Rocket },
+  { id: "optimization", label: "Otimização", icon: Sliders },
+  { id: "audiences", label: "Audiências", icon: Users },
+  { id: "plans", label: "Planos", icon: ListChecks },
+  { id: "catalogs", label: "Catálogos", icon: Package },
+  { id: "ab-tests", label: "A/B Tests", icon: GitBranch },
+  { id: "safety", label: "Segurança do agente", icon: Shield },
 ];
 
 function usePendingApprovalsCount(): number {
@@ -53,7 +60,7 @@ function usePendingApprovalsCount(): number {
 
 function useAiHealthDot(): { color: 'green' | 'yellow' | 'red'; tooltip: string } {
   const { health, isLoading } = useCreativeUsage();
-  if (isLoading) return { color: 'green', tooltip: 'Carregando saude do AI...' };
+  if (isLoading) return { color: 'green', tooltip: 'Carregando saúde do AI...' };
 
   // Total de runs nas ultimas 24h por provedor
   const nanoTotal = health.nano_banana_24h.success + health.nano_banana_24h.failed;
@@ -61,7 +68,7 @@ function useAiHealthDot(): { color: 'green' | 'yellow' | 'red'; tooltip: string 
   const totalRuns = nanoTotal + gptTotal;
 
   if (totalRuns === 0) {
-    return { color: 'green', tooltip: 'Sem geracoes nas ultimas 24h.' };
+    return { color: 'green', tooltip: 'Sem gerações nas últimas 24h.' };
   }
 
   const totalFailed = health.nano_banana_24h.failed + health.gpt_image_24h.failed;
@@ -69,10 +76,10 @@ function useAiHealthDot(): { color: 'green' | 'yellow' | 'red'; tooltip: string 
   const p95s = (health.p95_latency_ms ?? 0) / 1000;
 
   if (failRatio >= 0.5 || p95s > 90) {
-    return { color: 'red', tooltip: `Saude critica: ${Math.round(failRatio * 100)}% falhas, p95 ${p95s.toFixed(1)}s` };
+    return { color: 'red', tooltip: `Saúde crítica: ${Math.round(failRatio * 100)}% falhas, p95 ${p95s.toFixed(1)}s` };
   }
   if (failRatio >= 0.2 || p95s > 45) {
-    return { color: 'yellow', tooltip: `Atencao: ${Math.round(failRatio * 100)}% falhas, p95 ${p95s.toFixed(1)}s` };
+    return { color: 'yellow', tooltip: `Atenção: ${Math.round(failRatio * 100)}% falhas, p95 ${p95s.toFixed(1)}s` };
   }
   return { color: 'green', tooltip: `OK — ${Math.round((1 - failRatio) * 100)}% sucesso, p95 ${p95s.toFixed(1)}s` };
 }
@@ -81,6 +88,8 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
   const navigate = useNavigate();
   const pendingApprovals = usePendingApprovalsCount();
   const health = useAiHealthDot();
+  const { data: safetyStatus } = useSafetyStatus();
+  const safetyPaused = safetyStatus?.is_paused ?? false;
 
   return (
     <aside className="flex h-screen w-[220px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl md:w-[240px] xl:w-[260px]">
@@ -98,8 +107,8 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
             onClick={() => onViewChange("chat")}
             className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/20"
           >
-            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-            <span>Nova conversa</span>
+            <Sparkles className="h-4 w-4" />
+            <span>Agente HERO</span>
           </button>
         </div>
       </div>
@@ -146,6 +155,7 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
         <div className="space-y-1">
           {secondaryItems.map((item) => {
             const active = currentView === item.id;
+            const showSafetyDot = item.id === "safety" && safetyPaused;
             return (
               <button
                 key={item.id}
@@ -159,6 +169,9 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
               >
                 <item.icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-primary" : "text-sidebar-foreground/50")} />
                 <span className="truncate">{item.label}</span>
+                {showSafetyDot && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" title="Agente pausado" />
+                )}
               </button>
             );
           })}
@@ -173,7 +186,7 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
           title={health.tooltip}
         >
           <Activity className="h-3.5 w-3.5 text-sidebar-foreground/50" />
-          <span className="truncate">Saude do AI</span>
+          <span className="truncate">Saúde do AI</span>
           <span
             className={cn(
               'ml-auto h-1.5 w-1.5 rounded-full',
@@ -188,7 +201,7 @@ const AppSidebar = ({ currentView, onViewChange }: AppSidebarProps) => {
           className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all"
         >
           <Plug className="h-3.5 w-3.5 text-sidebar-foreground/50" />
-          <span className="truncate">Integracoes</span>
+          <span className="truncate">Integrações</span>
         </button>
         <UserMenu />
       </div>

@@ -21,7 +21,7 @@ export function BehaviorRulesTab() {
           <p className="text-sm font-medium text-foreground">Nenhuma regra de comportamento ainda</p>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
             Vá ate Meus anúncios e diga ao FURY uma instrucao permanente. Ex:
-            <span className="block mt-1 italic text-foreground/80">"Sempre responda em portugues formal"</span>
+            <span className="block mt-1 italic text-foreground/80">"Sempre responda em português formal"</span>
             <span className="block italic text-foreground/80">"Nunca use a palavra 'garantido'"</span>
           </p>
         </div>

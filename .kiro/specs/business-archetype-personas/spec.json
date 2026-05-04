@@ -1,0 +1,22 @@
+{
+  "feature_name": "business-archetype-personas",
+  "created_at": "2026-05-01T11:45:00Z",
+  "updated_at": "2026-05-01T13:00:00Z",
+  "language": "pt",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

@@ -41,6 +41,7 @@ async function applyTransform(
   img: Image,
   rule: PipelineRule,
   supabase: ReturnType<typeof createClient>,
+  companyId: string,
 ): Promise<Image> {
   if (rule.transform_type === 'logo_overlay') {
     const params = rule.transform_params as {
@@ -55,6 +56,7 @@ async function applyTransform(
       .from('creative_assets')
       .select('storage_path')
       .eq('id', params.asset_id)
+      .eq('company_id', companyId)
       .maybeSingle();
     if (!asset) return img;
     const { data: logoBlob } = await supabase.storage
@@ -208,7 +210,7 @@ Deno.serve(async (req) => {
   for (const rule of rules as PipelineRule[]) {
     if (!matchesScope(rule.applies_to, creative)) continue;
     try {
-      img = await applyTransform(img, rule, supabaseAdmin);
+      img = await applyTransform(img, rule, supabaseAdmin, companyId);
       applied.push(rule.id);
     } catch (e) {
       console.warn('[apply-creative-pipeline] rule failed:', rule.id, e);

@@ -53,7 +53,7 @@ export function LineChartSpendVsConv({ metrics }: Props) {
   if (data.length === 0) {
     return (
       <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
-        Sem dados no periodo
+        Sem dados no período
       </div>
     );
   }

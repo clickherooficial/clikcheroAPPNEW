@@ -23,9 +23,9 @@ function humanize(a: FuryAction): HumanizedAction {
     case 'low_ctr':
       return { emoji: '⚠️', tone: 'info', text: <>CTR de {name} em {val?.toFixed?.(2) ?? val}% (alerta)</> };
     case 'budget_exhausted':
-      return { emoji: '⚠️', tone: 'info', text: <>Orcamento de {name} consumido em {val?.toFixed?.(0) ?? val}% antes das 18h</> };
+      return { emoji: '⚠️', tone: 'info', text: <>Orçamento de {name} consumido em {val?.toFixed?.(0) ?? val}% antes das 18h</> };
     case 'scaling_opportunity':
-      return { emoji: '📈', tone: 'success', text: <>Sugiro aumentar orcamento de {name} — CPA R$ {val?.toFixed?.(2) ?? val}</> };
+      return { emoji: '📈', tone: 'success', text: <>Sugiro aumentar orçamento de {name} — CPA R$ {val?.toFixed?.(2) ?? val}</> };
     case 'manual_chat':
       return { emoji: '💬', tone: 'info', text: <>{a.action_type === 'pause' ? 'Pausei' : 'Reativei'} {name} via chat</> };
     default:
@@ -50,7 +50,7 @@ export function DashFuryTimeline() {
           <Zap className="w-4 h-4 text-amber-400" />
           Timeline FURY
         </h3>
-        <span className="text-[11px] text-muted-foreground">{items.length} acoes recentes</span>
+        <span className="text-[11px] text-muted-foreground">{items.length} ações recentes</span>
       </div>
 
       {isLoading ? (
@@ -60,7 +60,7 @@ export function DashFuryTimeline() {
       ) : items.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground gap-2 py-8">
           <Zap className="w-8 h-8 opacity-40" />
-          <p className="text-sm">Nenhuma acao registrada ainda</p>
+          <p className="text-sm">Nenhuma ação registrada ainda</p>
           <p className="text-xs">O FURY roda a cada hora</p>
         </div>
       ) : (

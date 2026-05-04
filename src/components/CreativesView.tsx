@@ -26,7 +26,7 @@ function cleanName(raw: string | null): string {
 function isCreativeTrulyActive(c: CreativeRow): boolean {
   if (c.status !== "ACTIVE") return false;
   const camp = c.campaign;
-  if (!camp) return false;  // sem campanha vinculada — nao da pra confirmar
+  if (!camp) return false;  // sem campanha vinculada — não da pra confirmar
   // effective_status reflete o estado real considerando hierarquia (campaign/account/etc)
   // Se nao tiver effective_status, cai no status simples
   const effective = camp.effective_status ?? camp.status;
@@ -191,7 +191,7 @@ const CreativesView = () => {
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
           <ImagePlus className="mx-auto mb-3 h-8 w-8 text-muted-foreground/60" />
           <p className="text-[13px] text-muted-foreground">
-            Nenhum criativo sincronizado. Va em Integracoes e clique em Sincronizar.
+            Nenhum criativo sincronizado. Va em Integrações e clique em Sincronizar.
           </p>
         </div>
       ) : filtered.length === 0 ? (

@@ -15,15 +15,24 @@ interface InvokeOpts {
 
 async function invokeEdgeFn(opts: InvokeOpts): Promise<unknown> {
   const url = `${SUPABASE_URL}/functions/v1/${opts.endpoint}`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: opts.authHeader,
-    },
-    body: JSON.stringify(opts.body),
-  });
+  const t0 = Date.now();
+  console.log(`[creative-tool] -> POST ${opts.endpoint} body keys=${Object.keys(opts.body).join(',')}`);
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: opts.authHeader,
+      },
+      body: JSON.stringify(opts.body),
+    });
+  } catch (fetchErr) {
+    console.error(`[creative-tool] fetch ${opts.endpoint} threw after ${Date.now() - t0}ms:`, (fetchErr as Error)?.message);
+    return { __error: true, status: 0, body: { error: 'network_error', message: (fetchErr as Error)?.message ?? 'fetch failed' } };
+  }
   const text = await resp.text();
+  console.log(`[creative-tool] <- ${opts.endpoint} status=${resp.status} in ${Date.now() - t0}ms (body ${text.length}b)`);
   let json: unknown = null;
   try { json = JSON.parse(text); } catch { /* keep null */ }
   if (!resp.ok) {

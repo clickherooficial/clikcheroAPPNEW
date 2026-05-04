@@ -75,7 +75,7 @@ export function DashFilters({
             </div>
             {selectedAccounts.length > 0 && (
               <button onClick={() => onSelectedAccountsChange([])} className="text-xs text-muted-foreground hover:text-foreground w-full text-left px-2 py-1 mt-1 border-t pt-2">
-                Limpar selecao
+                Limpar seleção
               </button>
             )}
           </PopoverContent>
@@ -105,7 +105,7 @@ export function DashFilters({
             </div>
             {selectedCampaigns.length > 0 && (
               <button onClick={() => onSelectedCampaignsChange([])} className="text-xs text-muted-foreground hover:text-foreground w-full text-left px-2 py-1 mt-1 border-t pt-2">
-                Limpar selecao
+                Limpar seleção
               </button>
             )}
           </PopoverContent>

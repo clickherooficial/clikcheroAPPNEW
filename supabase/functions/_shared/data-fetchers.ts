@@ -1059,3 +1059,73 @@ export async function reactivateCampaignAction(
   });
   return `Campanha "${campaign.name}" **reativada** com sucesso!`;
 }
+
+// knowledge-base-rag: busca semantica em documentos do cliente.
+// Gera embedding da query, chama RPC search_knowledge, formata resultado
+// com refs [doc:X#chunk:Y] para a IA citar.
+export async function searchKnowledge(
+  supabase: SupabaseClient,
+  companyId: string,
+  args: { query: string; top_k?: number; filters?: Record<string, unknown> },
+): Promise<string> {
+  if (!companyId) return 'Sem empresa associada — search_knowledge indisponivel.';
+  if (!args.query || args.query.trim().length < 3) {
+    return 'Query muito curta para busca semantica. Forneca uma pergunta com mais contexto.';
+  }
+  const openaiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!openaiKey) return 'OpenAI nao configurado — search_knowledge indisponivel.';
+
+  const embResp = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+    body: JSON.stringify({ model: 'text-embedding-3-small', input: args.query }),
+  });
+  if (!embResp.ok) {
+    return `Falha ao gerar embedding (${embResp.status})`;
+  }
+  const embJson = await embResp.json();
+  const queryEmbedding = embJson.data?.[0]?.embedding as number[] | undefined;
+  if (!queryEmbedding) return 'Embedding malformado.';
+
+  const topK = Math.max(1, Math.min(20, args.top_k ?? 8));
+  const queryPreview = args.query.slice(0, 200);
+
+  const { data, error } = await supabase.rpc('search_knowledge', {
+    p_company_id: companyId,
+    p_query_embedding: queryEmbedding,
+    p_top_k: topK,
+    p_filters: args.filters ?? {},
+    p_query_preview: queryPreview,
+  });
+  if (error) return `Erro na busca: ${error.message}`;
+
+  const rows = (data as Array<{
+    chunk_id: string;
+    document_id: string;
+    document_title: string;
+    document_type: string;
+    chunk_text: string;
+    chunk_index: number;
+    page_number: number | null;
+    score: number;
+    is_source_of_truth: boolean;
+  }>) ?? [];
+
+  if (rows.length === 0) {
+    return 'Nenhum documento relevante encontrado na memoria do cliente para esta query.';
+  }
+
+  const lines = rows.map((r, i) => {
+    const snippet = r.chunk_text.length > 600 ? r.chunk_text.slice(0, 600) + '...' : r.chunk_text;
+    const sotMark = r.is_source_of_truth ? ' [fonte de verdade]' : '';
+    const pageMark = r.page_number ? ` p.${r.page_number}` : '';
+    return `### Resultado ${i + 1} — ${r.document_title} (${r.document_type}${pageMark})${sotMark}\nRef: [doc:${r.document_id}#chunk:${r.chunk_index}]\nScore: ${r.score.toFixed(3)}\n\n${snippet}`;
+  });
+
+  return [
+    `Encontrados ${rows.length} trechos relevantes na memoria do cliente.`,
+    'IMPORTANTE: ao usar qualquer trecho na resposta, cite a Ref no formato [doc:UUID#chunk:N] como vem nos resultados. NUNCA invente refs.',
+    '',
+    ...lines,
+  ].join('\n');
+}

@@ -74,4 +74,12 @@ Integracao com Meta Ads via Graph API v22.0.
 7. **Idioma da UI**: Portugues (pt-BR)
 
 ---
+
+## Feature Flags
+
+Feature flags do projeto sao variaveis de ambiente lidas pelas Edge Functions (via `Deno.env.get`) ou pelo bundle Vite (via `import.meta.env`). Default ON sempre que possivel — flags servem pra rollback rapido, nao pra esconder features incompletas.
+
+- `ENABLE_ARCHETYPE_PERSONAS` (default ON; setar literal `"false"` desativa) — Spec `business-archetype-personas`. Quando OFF: `ai-chat` usa SYSTEM_PROMPT base sem persona, `archetype-detector` retorna no-op, `propose_campaign` ignora overrides de arquetipo. Comportamento Fase 1 (`chat-publish-flow`) preservado integralmente. Configurar via `npx supabase secrets set ENABLE_ARCHETYPE_PERSONAS=false --project-ref ckxewdahdiambbxmqxgb`.
+
+---
 _Document standards and patterns, not every dependency_

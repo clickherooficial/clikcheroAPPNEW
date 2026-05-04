@@ -34,9 +34,10 @@ type LocalStatus = 'generated' | 'approved' | 'discarded';
 
 interface CreativeGalleryInlineProps {
   creatives: InlineCreative[];
+  onSendSystemMessage?: (text: string) => void;
 }
 
-export function CreativeGalleryInline({ creatives }: CreativeGalleryInlineProps) {
+export function CreativeGalleryInline({ creatives, onSendSystemMessage }: CreativeGalleryInlineProps) {
   const { isReadOnly, approve, discard, iterate, vary } = useCreatives();
   const applyPipeline = useApplyCreativePipeline();
   const { toast } = useToast();
@@ -108,7 +109,7 @@ export function CreativeGalleryInline({ creatives }: CreativeGalleryInlineProps)
     const r = await vary(id);
     setBusyId(null);
     toast(r.ok
-      ? { title: 'Variacoes geradas', description: `${r.value.creatives.length} novas.` }
+      ? { title: 'Variações geradas', description: `${r.value.creatives.length} novas.` }
       : { title: 'Erro', description: r.error.kind, variant: 'destructive' });
   };
 
@@ -186,7 +187,7 @@ export function CreativeGalleryInline({ creatives }: CreativeGalleryInlineProps)
                       e.stopPropagation();
                       navigateToView('compliance');
                     }}
-                    title="Atencao: este criativo tem aviso de compliance. Click para ver detalhes."
+                    title="Atenção: este criativo tem aviso de compliance. Click para ver detalhes."
                   >
                     <AlertTriangle className="h-3 w-3" /> Compliance
                   </Badge>
@@ -222,7 +223,15 @@ export function CreativeGalleryInline({ creatives }: CreativeGalleryInlineProps)
                           size="sm"
                           variant="default"
                           className="h-7 text-[11px]"
-                          onClick={() => navigateToView('publisher')}
+                          onClick={() => {
+                            // Dispara fluxo autonomo via chat: LLM detecta e chama propose_campaign.
+                            // Se onSendSystemMessage nao foi passado (uso fora do chat), fallback pra view manual.
+                            if (onSendSystemMessage) {
+                              onSendSystemMessage(`[SISTEMA] Usuario clicou Publicar no criativo ${c.id}. Inicie o fluxo de publicacao agora — colete oferta + budget e chame propose_campaign com creative_id=${c.id}.`);
+                            } else {
+                              navigateToView('publisher');
+                            }
+                          }}
                         >
                           <Rocket className="h-3 w-3 mr-1" /> Publicar
                         </Button>
@@ -245,7 +254,7 @@ export function CreativeGalleryInline({ creatives }: CreativeGalleryInlineProps)
                     <Textarea
                       value={iterateInstruction}
                       onChange={(e) => setIterateInstruction(e.target.value)}
-                      placeholder="Mudanca desejada..."
+                      placeholder="Mudança desejada..."
                       rows={2}
                       maxLength={2000}
                       className="text-xs"

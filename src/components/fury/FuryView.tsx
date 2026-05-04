@@ -24,7 +24,7 @@ export default function FuryView() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">FURY v0 — Motor de Performance</h1>
-              <p className="text-sm text-muted-foreground">Regras deterministicas + historico 7 dias</p>
+              <p className="text-sm text-muted-foreground">Regras deterministicas + histórico 7 dias</p>
             </div>
           </div>
           <Button onClick={evaluate} disabled={isEvaluating} className="bg-amber-600 hover:bg-amber-700">
@@ -39,8 +39,8 @@ export default function FuryView() {
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="feed">Feed de Acoes</TabsTrigger>
-            <TabsTrigger value="config">Acoes automaticas</TabsTrigger>
+            <TabsTrigger value="feed">Feed de Ações</TabsTrigger>
+            <TabsTrigger value="config">Ações automaticas</TabsTrigger>
             <TabsTrigger value="behavior">Comportamento</TabsTrigger>
             <TabsTrigger value="pipeline">Pipeline criativo</TabsTrigger>
           </TabsList>

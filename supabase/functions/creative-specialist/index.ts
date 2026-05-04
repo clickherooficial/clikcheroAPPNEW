@@ -115,12 +115,16 @@ function calcCost(promptTokens: number, completionTokens: number): number {
 
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
+  const reqId = crypto.randomUUID().slice(0, 8);
+  const t0 = Date.now();
+  console.log(`[creative-specialist:${reqId}] received ${req.method}`);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     if (!authHeader.includes(serviceKey)) {
+      console.error(`[creative-specialist:${reqId}] auth rejected (no service key match)`);
       return jsonResponse(401, { ok: false, error: 'Internal endpoint — service role only' }, cors);
     }
 
@@ -189,6 +193,7 @@ Deno.serve(async (req) => {
       // Ate 3 rounds de tool call (suficiente: search_knowledge + generate_creative
       // + eventual iterate/compare)
       for (let round = 0; round < 4; round++) {
+        console.log(`[creative-specialist:${reqId}] round ${round} -> openai (msgs=${messages.length})`);
         const response = await openai.chat.completions.create({
           model: MODEL,
           // deno-lint-ignore no-explicit-any
@@ -223,6 +228,7 @@ Deno.serve(async (req) => {
             toolsUsed.push(fn.name);
             let args: Record<string, unknown> = {};
             try { args = JSON.parse(fn.arguments ?? '{}'); } catch { /* empty */ }
+            console.log(`[creative-specialist:${reqId}] tool=${fn.name} args=${JSON.stringify(args).slice(0, 200)} userAuth=${body.user_auth_header ? 'yes' : 'NO'}`);
 
             const result = await executeCreativeTool(
               fn.name,
@@ -232,6 +238,7 @@ Deno.serve(async (req) => {
               body.conversation_id ?? null,
               body.user_auth_header ?? '',
             );
+            console.log(`[creative-specialist:${reqId}] tool=${fn.name} result.len=${result.length} preview="${result.slice(0, 200).replace(/\n/g, ' ')}"`);
             messages.push({
               role: 'tool',
               // deno-lint-ignore no-explicit-any
@@ -243,6 +250,7 @@ Deno.serve(async (req) => {
         }
 
         finalAnswer = msg.content ?? '(sem resposta)';
+        console.log(`[creative-specialist:${reqId}] done in ${Date.now() - t0}ms tools=${toolsUsed.join(',') || 'none'} answer.len=${finalAnswer.length}`);
         break;
       }
 

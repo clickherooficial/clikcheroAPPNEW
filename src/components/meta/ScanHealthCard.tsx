@@ -14,9 +14,9 @@ const HEALTH_STYLES: Record<HealthStatus, { label: string; className: string; Ic
 
 const ERROR_LABELS: Record<string, string> = {
   token_expired: 'Token expirado',
-  permission_denied: 'Permissao negada',
+  permission_denied: 'Permissão negada',
   rate_limit: 'Limite de taxa',
-  not_found: 'Nao encontrado',
+  not_found: 'Não encontrado',
   network: 'Rede',
   server_error: 'Erro do servidor Meta',
   unknown: 'Desconhecido',
@@ -33,7 +33,7 @@ function relativeTime(iso: string | null): string {
 
 // Para next_scan_at: se ja passou da hora, mostra "em breve" (cron tem janela de 15min)
 function relativeFutureTime(iso: string | null): string {
-  if (!iso) return 'nao agendada';
+  if (!iso) return 'não agendada';
   try {
     const target = new Date(iso).getTime();
     if (target <= Date.now()) return 'em breve';
@@ -95,11 +95,11 @@ export function ScanHealthCard() {
       <CardContent className="space-y-3 text-sm">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="text-white/50 text-xs">Ultima execucao</div>
+            <div className="text-white/50 text-xs">Última execução</div>
             <div className="text-white/90">{relativeTime(data.last_success_at)}</div>
           </div>
           <div>
-            <div className="text-white/50 text-xs">Proxima execucao</div>
+            <div className="text-white/50 text-xs">Próxima execução</div>
             <div className="text-white/90">{relativeFutureTime(data.next_scan_at)}</div>
           </div>
           <div>

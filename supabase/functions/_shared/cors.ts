@@ -21,6 +21,8 @@ function getAllowedOrigins(): string[] {
 
 // Hostnames permitidos via wildcard (cobre preview URLs que mudam a cada deploy)
 const ALLOWED_HOST_SUFFIXES = ['.lovable.app', '.lovable.dev'];
+// Hostnames de dev locais — qualquer porta liberada (vite incrementa 8080->8081->...)
+const LOCAL_DEV_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   if (!origin) return false;
@@ -28,6 +30,7 @@ function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   try {
     const { hostname, protocol } = new URL(origin);
     if (protocol !== 'https:' && protocol !== 'http:') return false;
+    if (LOCAL_DEV_HOSTNAMES.has(hostname)) return true;
     return ALLOWED_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
   } catch {
     return false;

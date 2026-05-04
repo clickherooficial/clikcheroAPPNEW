@@ -17,7 +17,7 @@ const insights: Insight[] = [
     id: "1",
     type: "success",
     title: "ROAS acima da meta",
-    description: "A campanha 'Conversao — Produto A' atingiu ROAS de 5.2x, superando a meta de 4.0x. Considere escalar o orcamento.",
+    description: "A campanha 'Conversão — Produto A' atingiu ROAS de 5.2x, superando a meta de 4.0x. Considere escalar o orçamento.",
     metric: "5.2x ROAS",
     change: "+30%",
     positive: true,
@@ -26,7 +26,7 @@ const insights: Insight[] = [
     id: "2",
     type: "warning",
     title: "Fadiga de criativo detectada",
-    description: "O criativo 'Reels Testimonial' teve queda de 35% no CTR nos ultimos 3 dias. Recomendamos testar novas variacoes.",
+    description: "O criativo 'Reels Testimonial' teve queda de 35% no CTR nos últimos 3 dias. Recomendamos testar novas variações.",
     metric: "2.1% CTR",
     change: "-35%",
     positive: false,
@@ -34,8 +34,8 @@ const insights: Insight[] = [
   {
     id: "3",
     type: "tip",
-    title: "Oportunidade de publico",
-    description: "O publico Lookalike 1% tem CPA 38% menor que a media. Considere criar novas campanhas segmentando este publico.",
+    title: "Oportunidade de público",
+    description: "O público Lookalike 1% tem CPA 38% menor que a media. Considere criar novas campanhas segmentando este público.",
     metric: "R$ 22.30 CPA",
     change: "-38%",
     positive: true,
@@ -44,7 +44,7 @@ const insights: Insight[] = [
     id: "4",
     type: "success",
     title: "Melhor horario identificado",
-    description: "Suas campanhas performam 45% melhor entre 19h-22h. Os anuncios agendados neste horario geram mais conversoes.",
+    description: "Suas campanhas performam 45% melhor entre 19h-22h. Os anúncios agendados neste horario geram mais conversões.",
     metric: "19h-22h",
     change: "+45%",
     positive: true,
@@ -52,8 +52,8 @@ const insights: Insight[] = [
   {
     id: "5",
     type: "warning",
-    title: "Budget nao consumido",
-    description: "A campanha 'Awareness — Marca' consumiu apenas 60% do orcamento diario. Verifique a segmentacao de publico.",
+    title: "Budget não consumido",
+    description: "A campanha 'Awareness — Marca' consumiu apenas 60% do orçamento diario. Verifique a segmentacao de público.",
     metric: "60%",
     change: "-40%",
     positive: false,
@@ -77,20 +77,20 @@ const funnelSteps = [
   { label: "Cliques", value: "8.4K", pct: 34 },
   { label: "Visitas LP", value: "6.1K", pct: 25 },
   { label: "Add to Cart", value: "1.2K", pct: 10 },
-  { label: "Conversoes", value: "312", pct: 5 },
+  { label: "Conversões", value: "312", pct: 5 },
 ];
 
 const AnalysisView = () => {
   return (
     <div className="mx-auto h-full max-w-[1600px] animate-fade-in space-y-6 overflow-y-auto p-4 md:p-6 xl:p-8">
       <PageHeader
-        title="Analise"
-        description="Insights e recomendacoes baseados em dados das suas campanhas"
+        title="Análise"
+        description="Insights e recomendações baseados em dados das suas campanhas"
       />
 
       {/* Funnel */}
       <div className="rounded-xl border border-border/60 bg-card p-6 shadow-e1">
-        <h3 className="mb-5 text-sm font-semibold tracking-tight text-foreground">Funil de Conversao</h3>
+        <h3 className="mb-5 text-sm font-semibold tracking-tight text-foreground">Funil de Conversão</h3>
         <div className="flex h-48 items-end gap-3">
           {funnelSteps.map((step, i) => (
             <div key={step.label} className="flex flex-1 flex-col items-center gap-2">

@@ -17,11 +17,12 @@ import type { ProhibitionCategory } from '@/types/briefing';
 interface Props {
   niche: string | null;
   disabled?: boolean;
+  mode?: 'wizard' | 'settings';
   onComplete: () => void;
   onBack: () => void;
 }
 
-export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props) {
+export function StepProhibitions({ niche, disabled, mode = 'wizard', onComplete, onBack }: Props) {
   const { toast } = useToast();
   const { prohibitions, add, remove, seedVerticalDefaults, isLoading } = useBriefingProhibitions();
   const [seeded, setSeeded] = useState(false);
@@ -36,8 +37,8 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
         setSeeded(true);
         if (res.value > 0) {
           toast({
-            title: 'Sugestoes adicionadas',
-            description: `${res.value} proibicoes recomendadas para sua vertical foram pre-cadastradas. Edite se quiser.`,
+            title: 'Sugestões adicionadas',
+            description: `${res.value} proibições recomendadas para sua vertical foram pre-cadastradas. Edite se quiser.`,
           });
         }
       }
@@ -61,7 +62,7 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
   const handleRemove = async (id: string, source: string) => {
     if (source === 'vertical_default') {
       const ok = window.confirm(
-        'Esta proibicao foi recomendada para sua vertical (saude, financeiro, etc). Remover pode aumentar o risco de violacao da Meta. Continuar?',
+        'Esta proibição foi recomendada para sua vertical (saúde, financeiro, etc). Remover pode aumentar o risco de violacao da Meta. Continuar?',
       );
       if (!ok) return;
     }
@@ -75,15 +76,15 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
           <ShieldAlert className="h-4 w-4" />
           <AlertTitle>Vertical regulada detectada</AlertTitle>
           <AlertDescription>
-            Pelo seu nicho, recomendamos algumas proibicoes para reduzir risco de violacao Meta.
-            Voce pode editar livremente.
+            Pelo seu nicho, recomendamos algumas proibições para reduzir risco de violacao Meta.
+            Você pode editar livremente.
           </AlertDescription>
         </Alert>
       )}
 
       <ProhibitionCategorySection
         title="Palavras proibidas"
-        description="Termos que nunca devem aparecer nos seus anuncios"
+        description="Termos que nunca devem aparecer nos seus anúncios"
         items={grouped.word}
         onAdd={(vals) => handleAdd('word', vals)}
         onRemove={(id, src) => handleRemove(id, src)}
@@ -92,7 +93,7 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
 
       <ProhibitionCategorySection
         title="Assuntos proibidos"
-        description="Temas que devem ficar de fora (ex: comparacao com concorrentes)"
+        description="Temas que devem ficar de fora (ex: comparação com concorrentes)"
         items={grouped.topic}
         onAdd={(vals) => handleAdd('topic', vals)}
         onRemove={(id, src) => handleRemove(id, src)}
@@ -101,17 +102,24 @@ export function StepProhibitions({ niche, disabled, onComplete, onBack }: Props)
 
       <ProhibitionCategorySection
         title="Restricoes visuais"
-        description="Regras para criativos gerados (ex: nao usar fotos de pessoas)"
+        description="Regras para criativos gerados (ex: não usar fotos de pessoas)"
         items={grouped.visual}
         onAdd={(vals) => handleAdd('visual', vals)}
         onRemove={(id, src) => handleRemove(id, src)}
         disabled={disabled}
       />
 
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
-        <Button onClick={onComplete} disabled={disabled}>Concluir</Button>
-      </div>
+      {mode !== 'settings' && (
+        <div className="flex justify-between pt-4">
+          <Button variant="ghost" onClick={onBack} disabled={disabled}>Voltar</Button>
+          <Button onClick={onComplete} disabled={disabled}>Concluir</Button>
+        </div>
+      )}
+      {mode === 'settings' && (
+        <p className="pt-2 text-xs text-muted-foreground">
+          Cada proibição e salva automaticamente ao adicionar ou remover.
+        </p>
+      )}
     </div>
   );
 }

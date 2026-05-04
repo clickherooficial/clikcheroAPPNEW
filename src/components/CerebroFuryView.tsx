@@ -19,18 +19,18 @@ import { useActiveRules } from '@/hooks/useActiveRules';
 import MemoryView from './knowledge/MemoryView';
 import { BriefingView } from './briefing/BriefingView';
 
-type Tab = 'regras' | 'memoria' | 'identidade' | 'historico';
-type RuleSubTab = 'todas' | 'comportamento' | 'acoes' | 'pipeline';
+type Tab = 'regras' | 'memória' | 'identidade' | 'histórico';
+type RuleSubTab = 'todas' | 'comportamento' | 'ações' | 'pipeline';
 
 export default function CerebroFuryView() {
   const [tab, setTab] = useState<Tab>(() => {
     const pref = readTabPref('cerebro');
-    if (pref === 'memoria' || pref === 'identidade' || pref === 'historico') return pref;
+    if (pref === 'memória' || pref === 'identidade' || pref === 'histórico') return pref;
     return 'regras';
   });
   const [ruleSubTab, setRuleSubTab] = useState<RuleSubTab>(() => {
     const pref = readTabPref('cerebro-rules');
-    if (pref === 'comportamento' || pref === 'acoes' || pref === 'pipeline') return pref;
+    if (pref === 'comportamento' || pref === 'ações' || pref === 'pipeline') return pref;
     return 'todas';
   });
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function CerebroFuryView() {
               <Brain className="w-6 h-6 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Configuracoes</h1>
+              <h1 className="text-xl font-bold text-foreground">Configurações</h1>
               <p className="text-sm text-muted-foreground">Tudo que o assistente sabe e faz sobre seu negocio.</p>
             </div>
           </div>
@@ -70,9 +70,9 @@ export default function CerebroFuryView() {
               Regras
               {totalRules > 0 && <Badge variant="secondary" className="ml-2 h-4 px-1.5 text-[10px]">{totalRules}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="memoria">Memoria</TabsTrigger>
+            <TabsTrigger value="memória">Memória</TabsTrigger>
             <TabsTrigger value="identidade">Identidade</TabsTrigger>
-            <TabsTrigger value="historico">Historico</TabsTrigger>
+            <TabsTrigger value="histórico">Histórico</TabsTrigger>
           </TabsList>
 
           {/* === Regras === */}
@@ -82,7 +82,7 @@ export default function CerebroFuryView() {
               <TabsList>
                 <TabsTrigger value="todas">Todas ({totalRules})</TabsTrigger>
                 <TabsTrigger value="comportamento">Comportamento ({behavior.length})</TabsTrigger>
-                <TabsTrigger value="acoes">Acoes automaticas ({action.length})</TabsTrigger>
+                <TabsTrigger value="ações">Ações automaticas ({action.length})</TabsTrigger>
                 <TabsTrigger value="pipeline">Pipeline criativo ({pipeline.length})</TabsTrigger>
               </TabsList>
 
@@ -97,7 +97,7 @@ export default function CerebroFuryView() {
               <TabsContent value="comportamento" className="mt-4">
                 <BehaviorRulesTab />
               </TabsContent>
-              <TabsContent value="acoes" className="mt-4">
+              <TabsContent value="ações" className="mt-4">
                 <FuryRulesConfig />
               </TabsContent>
               <TabsContent value="pipeline" className="mt-4">
@@ -107,7 +107,7 @@ export default function CerebroFuryView() {
           </TabsContent>
 
           {/* === Memoria === */}
-          <TabsContent value="memoria" className="mt-4">
+          <TabsContent value="memória" className="mt-4">
             <MemoryView />
           </TabsContent>
 
@@ -117,7 +117,7 @@ export default function CerebroFuryView() {
           </TabsContent>
 
           {/* === Historico === */}
-          <TabsContent value="historico" className="mt-4">
+          <TabsContent value="histórico" className="mt-4">
             <FuryActionFeed />
           </TabsContent>
         </Tabs>

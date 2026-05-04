@@ -14,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useCreatives } from '@/hooks/use-creatives';
+import { useApplyCreativePipeline } from '@/hooks/useApplyCreativePipeline';
 import { useToast } from '@/hooks/use-toast';
 import {
   ASPECT_LABELS,
@@ -31,6 +32,7 @@ const FORMAT_FILTERS: Array<AspectFormat | 'all'> = ['all', 'feed_1x1', 'story_9
 
 export function StudioView() {
   const { creatives, isLoading, isReadOnly, filters, setFilters, approve, exportZip } = useCreatives();
+  const applyPipeline = useApplyCreativePipeline();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CreativeStatus | 'all'>('all');
@@ -62,13 +64,26 @@ export function StudioView() {
     if (selected.size === 0) return;
     setBulkBusy(true);
     let ok = 0, fail = 0;
+    const approvedIds: string[] = [];
     for (const id of selected) {
       const r = await approve(id);
-      if (r.ok) ok++; else fail++;
+      if (r.ok) {
+        ok++;
+        approvedIds.push(id);
+      } else {
+        fail++;
+      }
     }
     setBulkBusy(false);
     setSelected(new Set());
-    toast({ title: 'Aprovacao em lote', description: `${ok} aprovado(s), ${fail} falha(s).` });
+    toast({ title: 'Aprovação em lote', description: `${ok} aprovado(s), ${fail} falha(s).` });
+
+    // Fase 6 (T6.2): fire-and-forget apply-creative-pipeline para cada aprovado
+    for (const id of approvedIds) {
+      applyPipeline
+        .mutateAsync({ creative_id: id, target_table: 'creatives_generated' })
+        .catch((err) => console.warn('[apply-pipeline] failed (non-blocking):', err));
+    }
   };
 
   const handleBulkExport = async () => {
@@ -109,7 +124,7 @@ export function StudioView() {
               ZIP ({selected.size})
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-              Limpar selecao
+              Limpar seleção
             </Button>
           </div>
         )}
@@ -216,7 +231,7 @@ export function StudioView() {
                         e.stopPropagation();
                         navigateToView('compliance');
                       }}
-                      title="Atencao: aviso de compliance. Click para detalhes."
+                      title="Atenção: aviso de compliance. Click para detalhes."
                     >
                       <AlertTriangle className="h-3 w-3" /> Compliance
                     </Badge>

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Download, Sparkles, Trash2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Loader2, Download, Sparkles, Trash2, AlertTriangle, ShieldCheck, Wand2 } from 'lucide-react';
 import { useCreatives } from '@/hooks/use-creatives';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -161,6 +161,11 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
             {creative.is_near_duplicate && (
               <Badge variant="outline" className="gap-1">Quase duplicado</Badge>
             )}
+            {Array.isArray(creative.pipeline_applied_rules) && creative.pipeline_applied_rules.length > 0 && (
+              <Badge variant="secondary" className="gap-1 border-violet-500/40 text-violet-300">
+                <Wand2 className="h-3 w-3" /> Pipeline aplicado ({creative.pipeline_applied_rules.length})
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -174,7 +179,7 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
               />
             ) : (
               <div className="aspect-square flex items-center justify-center text-muted-foreground text-sm">
-                URL expirado — recarregue a pagina
+                URL expirado — recarregue a página
               </div>
             )}
           </div>
@@ -211,7 +216,7 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
                          disabled={isReadOnly} placeholder="ex: black-friday, oferta, hero" />
                 </div>
                 <div>
-                  <Label htmlFor="description">Descricao</Label>
+                  <Label htmlFor="description">Descrição</Label>
                   <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
                             disabled={isReadOnly} rows={2} maxLength={1000} />
                 </div>
@@ -259,9 +264,9 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
                 <>
                   <Badge variant={compliance.passed ? 'default' : 'destructive'} className="gap-1">
                     {compliance.passed ? <ShieldCheck className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                    {compliance.passed ? 'Aprovado no compliance' : 'Atencao no compliance'}
+                    {compliance.passed ? 'Aprovado no compliance' : 'Atenção no compliance'}
                   </Badge>
-                  <ComplianceList title="Briefing (proibicoes do cliente)" hits={compliance.briefing_hits} />
+                  <ComplianceList title="Briefing (proibições do cliente)" hits={compliance.briefing_hits} />
                   <ComplianceList title="Baseline Meta" hits={compliance.baseline_hits} />
                   <ComplianceList title="OCR (texto na imagem)" hits={compliance.ocr_hits} />
                 </>

@@ -19,7 +19,7 @@ export default function CampaignPublisherView() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Publicar Campanha</h1>
-              <p className="text-sm text-muted-foreground">Criacao 3 niveis com compliance gate nativo</p>
+              <p className="text-sm text-muted-foreground">Criação 3 niveis com compliance gate nativo</p>
             </div>
           </div>
         </div>
@@ -27,7 +27,7 @@ export default function CampaignPublisherView() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="new" className="gap-2"><Plus className="w-3 h-3" /> Nova</TabsTrigger>
-            <TabsTrigger value="history" className="gap-2"><History className="w-3 h-3" /> Historico</TabsTrigger>
+            <TabsTrigger value="history" className="gap-2"><History className="w-3 h-3" /> Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new" className="mt-4">

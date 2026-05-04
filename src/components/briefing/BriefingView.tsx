@@ -15,6 +15,7 @@ import { StepVisuals } from './steps/StepVisuals';
 import { StepProhibitions } from './steps/StepProhibitions';
 import { Progress } from '@/components/ui/progress';
 import { BriefingHistory } from './BriefingHistory';
+import { ArchetypeSelector } from './ArchetypeSelector';
 
 export function BriefingView() {
   const { briefing, isLoading, isReadOnly, saveStep } = useBriefing();
@@ -67,12 +68,14 @@ export function BriefingView() {
           {isReadOnly && (
             <Alert className="mt-3" variant="default">
               <AlertDescription>
-                Voce esta em modo somente leitura. Apenas owner/admin podem editar.
+                Você esta em modo somente leitura. Apenas owner/admin podem editar.
               </AlertDescription>
             </Alert>
           )}
         </CardContent>
       </Card>
+
+      <ArchetypeSelector />
 
       <Accordion type="multiple" className="space-y-2">
         <AccordionItem value="business" className="border rounded-md px-4">
@@ -81,6 +84,7 @@ export function BriefingView() {
             <StepBusiness
               initial={briefing}
               disabled={isReadOnly}
+              mode="settings"
               onSubmit={(data) => handleSave(1, data, 'Dados do negocio atualizados')}
             />
           </AccordionContent>
@@ -89,7 +93,7 @@ export function BriefingView() {
         <AccordionItem value="offers" className="border rounded-md px-4">
           <AccordionTrigger>2 — Ofertas</AccordionTrigger>
           <AccordionContent>
-            <StepOffers disabled={isReadOnly} onContinue={() => undefined} onBack={() => undefined} />
+            <StepOffers disabled={isReadOnly} mode="settings" onContinue={() => undefined} onBack={() => undefined} />
           </AccordionContent>
         </AccordionItem>
 
@@ -99,7 +103,8 @@ export function BriefingView() {
             <StepAudience
               initial={briefing?.audience ?? {}}
               disabled={isReadOnly}
-              onSubmit={(audience) => handleSave(3, { audience }, 'Audiencia atualizada')}
+              mode="settings"
+              onSubmit={(audience) => handleSave(3, { audience }, 'Audiência atualizada')}
               onBack={() => undefined}
             />
           </AccordionContent>
@@ -111,6 +116,7 @@ export function BriefingView() {
             <StepTone
               initial={briefing?.tone ?? {}}
               disabled={isReadOnly}
+              mode="settings"
               onSubmit={(tone) => handleSave(4, { tone }, 'Tom de voz atualizado')}
               onBack={() => undefined}
             />
@@ -123,6 +129,7 @@ export function BriefingView() {
             <StepVisuals
               initial={briefing?.palette ?? {}}
               disabled={isReadOnly}
+              mode="settings"
               onSubmit={(palette) => handleSave(5, { palette }, 'Identidade visual atualizada')}
               onBack={() => undefined}
             />
@@ -130,11 +137,12 @@ export function BriefingView() {
         </AccordionItem>
 
         <AccordionItem value="prohibitions" className="border rounded-md px-4">
-          <AccordionTrigger>6 — O que NAO usar (proibicoes)</AccordionTrigger>
+          <AccordionTrigger>6 — O que Não usar (proibições)</AccordionTrigger>
           <AccordionContent>
             <StepProhibitions
               niche={briefing?.niche ?? null}
               disabled={isReadOnly}
+              mode="settings"
               onComplete={() => undefined}
               onBack={() => undefined}
             />

@@ -5,7 +5,7 @@ interface Props {
   title: string;
   value: string;
   hint?: string;
-  deltaPct?: number | null;       // comparativo vs periodo anterior (%)
+  deltaPct?: number | null;       // comparativo vs período anterior (%)
   higherIsBetter?: boolean;       // true pra ROI/Lucro/Leads/ROAS; false pra CPL
   icon: React.ElementType;
   loading?: boolean;

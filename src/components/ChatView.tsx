@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Square, Search, FileBarChart, PanelLeft } from "lucide-react";
+import { Send, Sparkles, Square, Search, FileBarChart, PanelLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChat } from "@/hooks/use-chat";
 import { useAttachments } from "@/hooks/use-attachments";
@@ -15,25 +15,21 @@ import { AttachmentPreviewList } from "@/components/chat/AttachmentPreview";
 import { MessageAttachments } from "@/components/chat/MessageAttachments";
 import { CitationRenderer } from "@/components/knowledge/CitationRenderer";
 import { ChatCreativeGallery } from "@/components/creatives-studio/ChatCreativeGallery";
-
-const suggestions = [
-  "Qual o desempenho das minhas campanhas nos ultimos 7 dias",
-  "Criar nova campanha de venda / Quero vender mais",
-  "Compare essa semana com a anterior",
-  "Criar nova campanha de engajamento / Quero ser visto",
-];
+import { InlineCampaignProposalCard } from "@/components/chat/InlineCampaignProposalCard";
+import { useBriefing } from "@/hooks/use-briefing";
+import { getQuickstartCards, type QuickstartCard } from "@/lib/quickstart-cards";
 
 const quickReports = [
   {
     icon: FileBarChart,
-    label: "Relatorio Semanal",
-    description: "Visao geral 7 dias com variacao + top campanhas",
-    prompt: "Me da um relatorio semanal completo das minhas campanhas",
+    label: "Relatório Semanal",
+    description: "Visão geral 7 dias com variação + top campanhas",
+    prompt: "Me da um relatório semanal completo das minhas campanhas",
   },
   {
     icon: Sparkles,
     label: "Crie imagens de criativos para anunciar",
-    description: "Pedido para gerar imagens de anuncio com base no seu briefing",
+    description: "Pedido para gerar imagens de anúncio com base no seu briefing",
     prompt:
       "Quero criar imagens de criativos para anunciar no Meta. Use meu briefing, ofertas e identidade visual. Sugira conceitos e gere as imagens.",
   },
@@ -59,12 +55,14 @@ const ChatView = () => {
   const proactiveLoaded = useRef(false);
   const { toast } = useToast();
   const attachments = useAttachments(conversationId);
+  const { briefing } = useBriefing();
+  const quickstartCards: QuickstartCard[] = getQuickstartCards(briefing?.business_archetype ?? null);
 
   // Mostra erros de validacao via toast
   useEffect(() => {
     if (attachments.validationErrors.length > 0) {
       attachments.validationErrors.forEach((err) =>
-        toast({ title: "Anexo nao aceito", description: err, variant: "destructive" })
+        toast({ title: "Anexo não aceito", description: err, variant: "destructive" })
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,8 +96,38 @@ const ChatView = () => {
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  // Forca insercao de texto plano: alguns navegadores (Chromium em dark-mode auto)
+  // aplicam o color/font do source no textarea via -webkit-text-fill-color, deixando
+  // o texto colado invisivel. Manipulando o paste manualmente garantimos string crua.
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData?.getData("text/plain");
+    if (text == null) return;
+    e.preventDefault();
+    const target = e.currentTarget;
+    const start = target.selectionStart ?? input.length;
+    const end = target.selectionEnd ?? input.length;
+    const next = input.slice(0, start) + text + input.slice(end);
+    setInput(next);
+    requestAnimationFrame(() => {
+      const pos = start + text.length;
+      target.selectionStart = target.selectionEnd = pos;
+    });
+  };
+
+  const handleSuggestionClick = (suggestion: string, cardId?: string) => {
     if (isStreaming) return;
+    // Task 9.1: quando origem e quickstart card, propaga business_archetype + card_id
+    // pra metadata da user message (chat_messages.metadata, jsonb). Permite analytics
+    // de quais cards convertem em propostas/publicacao.
+    if (cardId) {
+      const metadata: Record<string, unknown> = {
+        source: 'quickstart_card',
+        card_id: cardId,
+        business_archetype: briefing?.business_archetype ?? null,
+      };
+      sendMessage(suggestion, [], metadata);
+      return;
+    }
     sendMessage(suggestion);
   };
 
@@ -111,10 +139,19 @@ const ChatView = () => {
     // Renderiza o componente real quando o placeholder aparece nos lines.
     const galleryRegex = /<creative-gallery\s+ids="([^"]+)"\s*\/?>/g;
     const galleries: Array<{ key: string; ids: string[] }> = [];
-    const contentWithMarkers = content.replace(galleryRegex, (_, idsStr: string) => {
+    let contentWithMarkers = content.replace(galleryRegex, (_, idsStr: string) => {
       const ids = idsStr.split(',').map((s) => s.trim()).filter(Boolean);
       const key = `__CREATIVE_GALLERY_${galleries.length}__`;
       galleries.push({ key, ids });
+      return `\n${key}\n`;
+    });
+
+    // Detecta <campaign-proposal id="..."/> — chat-publish-flow (task 5.4)
+    const proposalRegex = /<campaign-proposal\s+id="([^"]+)"\s*\/?>/g;
+    const proposals: Array<{ key: string; id: string }> = [];
+    contentWithMarkers = contentWithMarkers.replace(proposalRegex, (_, id: string) => {
+      const key = `__CAMPAIGN_PROPOSAL_${proposals.length}__`;
+      proposals.push({ key, id: id.trim() });
       return `\n${key}\n`;
     });
 
@@ -145,7 +182,24 @@ const ChatView = () => {
         const idx = Number(galleryMatch[1]);
         const g = galleries[idx];
         if (g) {
-          elements.push(<ChatCreativeGallery key={`gal-${i}`} ids={g.ids} />);
+          elements.push(<ChatCreativeGallery key={`gal-${i}`} ids={g.ids} onSendSystemMessage={(text) => sendMessage(text)} />);
+        }
+        continue;
+      }
+
+      // Campaign proposal placeholder — chat-publish-flow (task 5.4)
+      const proposalMatch = line.match(/^__CAMPAIGN_PROPOSAL_(\d+)__$/);
+      if (proposalMatch) {
+        const idx = Number(proposalMatch[1]);
+        const pr = proposals[idx];
+        if (pr) {
+          elements.push(
+            <InlineCampaignProposalCard
+              key={`prop-${i}`}
+              proposalId={pr.id}
+              onSendSystemMessage={(text) => sendMessage(text)}
+            />,
+          );
         }
         continue;
       }
@@ -293,12 +347,20 @@ const ChatView = () => {
       {/* Toolbar superior */}
       <div className="flex items-center gap-2 px-4 md:px-6 pt-3">
         <button
+          onClick={() => newConversation()}
+          className="group flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          aria-label="Nova conversa"
+        >
+          <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
+          Nova conversa
+        </button>
+        <button
           onClick={() => setHistoryOpen((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-          aria-label="Toggle historico de conversas"
+          aria-label="Toggle histórico de conversas"
         >
           <PanelLeft className="h-3.5 w-3.5" />
-          Historico de conversas
+          Histórico de conversas
         </button>
       </div>
 
@@ -321,15 +383,15 @@ const ChatView = () => {
             <ProactiveBanner onAsk={(p) => sendMessage(p)} />
 
             <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
-              {suggestions.map((s) => (
+              {quickstartCards.map((card) => (
                 <button
-                  key={s}
-                  onClick={() => handleSuggestionClick(s)}
+                  key={card.id}
+                  onClick={() => handleSuggestionClick(card.prompt, card.id)}
                   className="group rounded-xl border border-border/60 bg-card p-4 text-left text-[13px] text-muted-foreground shadow-e1 transition-all duration-base ease-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:bg-accent/40 hover:text-foreground hover:shadow-e2"
                 >
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60 transition-colors group-hover:text-primary" strokeWidth={2} />
-                    <span className="leading-snug">{s}</span>
+                    <span className="leading-snug">{card.title}</span>
                   </div>
                 </button>
               ))}
@@ -337,7 +399,7 @@ const ChatView = () => {
 
             <div className="mt-6">
               <div className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                Relatorios Rapidos
+                Relatórios Rápidos
               </div>
               <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
                 {quickReports.map((r) => {
@@ -441,9 +503,11 @@ const ChatView = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder="Pergunte sobre suas campanhas..."
                 rows={1}
-                className="flex-1 resize-none bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none py-2 max-h-32"
+                className="flex-1 resize-none bg-transparent text-[13px] caret-foreground placeholder:text-muted-foreground/60 focus:outline-none py-2 max-h-32"
+                style={{ color: 'hsl(var(--foreground))', WebkitTextFillColor: 'hsl(var(--foreground))' }}
                 disabled={isStreaming}
               />
               {isStreaming ? (

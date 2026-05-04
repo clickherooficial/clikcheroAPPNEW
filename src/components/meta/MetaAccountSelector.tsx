@@ -12,7 +12,7 @@ interface MetaAccountSelectorProps {
 const accountStatusLabels: Record<string, { label: string; color: string }> = {
   '1': { label: 'Ativo', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   '2': { label: 'Desativado', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
-  '3': { label: 'Nao aprovado', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  '3': { label: 'Não aprovado', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   '100': { label: 'Pendente', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
 };
 
@@ -122,12 +122,12 @@ export function MetaAccountSelector({ onComplete }: MetaAccountSelectorProps) {
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-medium text-white/80">
-            Contas de Anuncio ({ad_accounts.length})
+            Contas de Anúncio ({ad_accounts.length})
           </h3>
         </div>
 
         {ad_accounts.length === 0 ? (
-          <p className="text-xs text-white/30 pl-6">Nenhuma conta de anuncio encontrada.</p>
+          <p className="text-xs text-white/30 pl-6">Nenhuma conta de anúncio encontrada.</p>
         ) : (
           <div className="space-y-1.5">
             {ad_accounts.map((account: EnrichedAccount) => {
@@ -193,12 +193,12 @@ export function MetaAccountSelector({ onComplete }: MetaAccountSelectorProps) {
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-medium text-white/80">
-            Paginas do Facebook ({pages.length})
+            Páginas do Facebook ({pages.length})
           </h3>
         </div>
 
         {pages.length === 0 ? (
-          <p className="text-xs text-white/30 pl-6">Nenhuma pagina encontrada.</p>
+          <p className="text-xs text-white/30 pl-6">Nenhuma página encontrada.</p>
         ) : (
           <div className="space-y-1.5">
             {pages.map((page: EnrichedPage) => (
@@ -227,7 +227,7 @@ export function MetaAccountSelector({ onComplete }: MetaAccountSelectorProps) {
         className="w-full h-11 brand-gradient text-white font-medium rounded-xl hover:opacity-90 transition-all"
       >
         {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Salvar Selecao ({selectedAccounts.size} conta{selectedAccounts.size !== 1 ? 's' : ''}, {selectedPages.size} pagina{selectedPages.size !== 1 ? 's' : ''})
+        Salvar Seleção ({selectedAccounts.size} conta{selectedAccounts.size !== 1 ? 's' : ''}, {selectedPages.size} página{selectedPages.size !== 1 ? 's' : ''})
       </Button>
     </div>
   );

@@ -39,7 +39,7 @@ function NotificationsSection({ settings, onUpdate, saving }: {
     setTesting('webhook');
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Nao autenticado');
+      if (!session) throw new Error('Não autenticado');
       const { data, error } = await supabase.functions.invoke('compliance-scan', {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: { test_webhook: true },
@@ -56,7 +56,7 @@ function NotificationsSection({ settings, onUpdate, saving }: {
     setTesting('email');
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Nao autenticado');
+      if (!session) throw new Error('Não autenticado');
       const { data, error } = await supabase.functions.invoke('compliance-scan', {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: { test_email: true },
@@ -74,10 +74,10 @@ function NotificationsSection({ settings, onUpdate, saving }: {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          Notificacoes
+          Notificações
         </CardTitle>
         <CardDescription>
-          Receba alertas quando anuncios forem pausados automaticamente.
+          Receba alertas quando anúncios forem pausados automaticamente.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -187,7 +187,7 @@ export function ComplianceSettings() {
     }
     const current = brandGuide?.brand_colors ?? [];
     if (current.length >= 10) {
-      toast({ title: 'Limite atingido', description: 'Maximo 10 cores.', variant: 'destructive' });
+      toast({ title: 'Limite atingido', description: 'Máximo 10 cores.', variant: 'destructive' });
       return;
     }
     updateBrandGuide.mutate({ brand_colors: [...current, hex.toUpperCase()] });
@@ -218,13 +218,13 @@ export function ComplianceSettings() {
             Auto-Takedown
           </CardTitle>
           <CardDescription>
-            Pausa automaticamente anuncios com score abaixo do threshold.
+            Pausa automaticamente anúncios com score abaixo do threshold.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <Label htmlFor="takedown-toggle" className="font-medium">
-              Habilitar pausa automatica
+              Habilitar pausa automática
             </Label>
             <Switch
               id="takedown-toggle"
@@ -263,12 +263,12 @@ export function ComplianceSettings() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="critical">Apenas violacoes criticas</SelectItem>
+                <SelectItem value="critical">Apenas violacoes críticas</SelectItem>
                 <SelectItem value="any">Qualquer violacao (score abaixo do threshold)</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              "Apenas criticas" = so pausa se houver pelo menos 1 violacao critical, alem do score estar abaixo do threshold.
+              "Apenas críticas" = so pausa se houver pelo menos 1 violacao critical, alem do score estar abaixo do threshold.
             </p>
           </div>
         </CardContent>
@@ -282,7 +282,7 @@ export function ComplianceSettings() {
             Brand Guide
           </CardTitle>
           <CardDescription>
-            Cores da marca e logo para validacao visual dos criativos.
+            Cores da marca e logo para validação visual dos criativos.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

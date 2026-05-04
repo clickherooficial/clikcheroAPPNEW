@@ -19,9 +19,9 @@ const ACCOUNT_STATUS: Record<number, { label: string; tone: 'ok' | 'bad' | 'warn
   1: { label: 'Ativo', tone: 'ok' },
   2: { label: 'Desativado', tone: 'bad' },
   3: { label: 'Pendente pagto', tone: 'warn' },
-  7: { label: 'Em revisao', tone: 'warn' },
+  7: { label: 'Em revisão', tone: 'warn' },
   8: { label: 'Pendente pagto', tone: 'warn' },
-  9: { label: 'Periodo graca', tone: 'warn' },
+  9: { label: 'Período graca', tone: 'warn' },
   100: { label: 'Pendente fechamento', tone: 'bad' },
   101: { label: 'Fechado', tone: 'bad' },
 };
@@ -223,7 +223,7 @@ export function MetaAssetPicker({ onComplete, onCancel }: Props) {
         <div className="flex items-center gap-2 flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar BM, conta ou pagina..."
+            placeholder="Buscar BM, conta ou página..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8"
@@ -280,11 +280,11 @@ export function MetaAssetPicker({ onComplete, onCancel }: Props) {
               <Megaphone className="w-3 h-3" /> {totalSelectedAccounts} conta{totalSelectedAccounts !== 1 ? 's' : ''}
             </Badge>
             <Badge variant="outline" className="gap-1">
-              <FileText className="w-3 h-3" /> {totalSelectedPages} pagina{totalSelectedPages !== 1 ? 's' : ''}
+              <FileText className="w-3 h-3" /> {totalSelectedPages} página{totalSelectedPages !== 1 ? 's' : ''}
             </Badge>
             {!canSave && (
               <span className="text-amber-400 text-xs">
-                {totalSelectedAccounts === 0 ? 'Selecione ao menos 1 conta' : 'Selecione ao menos 1 pagina'}
+                {totalSelectedAccounts === 0 ? 'Selecione ao menos 1 conta' : 'Selecione ao menos 1 página'}
               </span>
             )}
           </div>
@@ -296,7 +296,7 @@ export function MetaAssetPicker({ onComplete, onCancel }: Props) {
             )}
             <Button onClick={handleSave} disabled={!canSave || isSaving} size="sm">
               {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-              Salvar Selecao
+              Salvar Seleção
             </Button>
           </div>
         </div>
@@ -347,7 +347,7 @@ function BMCard({
             <div className="text-xs text-muted-foreground">
               {bm.ad_accounts.length} conta{bm.ad_accounts.length !== 1 ? 's' : ''}
               {activeCount > 0 && ` · ${activeCount} com campanhas ativas`}
-              {bm.pages.length > 0 && ` · ${bm.pages.length} pagina${bm.pages.length !== 1 ? 's' : ''}`}
+              {bm.pages.length > 0 && ` · ${bm.pages.length} página${bm.pages.length !== 1 ? 's' : ''}`}
             </div>
           </div>
         </button>
@@ -364,7 +364,7 @@ function BMCard({
           {bm.ad_accounts.length > 0 && (
             <div className="space-y-1.5">
               <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Contas de Anuncio
+                Contas de Anúncio
               </div>
               {bm.ad_accounts.map((a) => (
                 <AccountRow
@@ -380,7 +380,7 @@ function BMCard({
           {bm.pages.length > 0 && (
             <div className="space-y-1.5">
               <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Paginas do Facebook
+                Páginas do Facebook
               </div>
               {bm.pages.map((p) => (
                 <PageRow
@@ -421,7 +421,7 @@ function PersonalSection({
       {accounts.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-            Contas de Anuncio
+            Contas de Anúncio
           </div>
           {accounts.map((a) => (
             <AccountRow
@@ -436,7 +436,7 @@ function PersonalSection({
       {pages.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-            Paginas
+            Páginas
           </div>
           {pages.map((p) => (
             <PageRow key={p.id} page={p} selected={selectedPages.has(p.id)} onToggle={() => onTogglePage(p.id)} />
@@ -474,7 +474,7 @@ function AccountRow({ account, selected, onToggle }: { account: EnrichedAccount;
           )}
           {account.spend_last_30d > 0 && (
             <span className="text-[10px] text-muted-foreground">
-              {fmtBRL(account.spend_last_30d)} nos ultimos 30d
+              {fmtBRL(account.spend_last_30d)} nos últimos 30d
             </span>
           )}
         </div>

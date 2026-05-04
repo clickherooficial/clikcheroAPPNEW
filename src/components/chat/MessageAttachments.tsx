@@ -37,10 +37,10 @@ export function MessageAttachments({ messageId, attachmentIds }: MessageAttachme
     if (!result.ok) {
       const msg =
         result.error.kind === 'duplicate'
-          ? 'Este anexo ja esta na memoria'
+          ? 'Este anexo ja esta na memória'
           : result.error.kind === 'unsupported_mime'
-          ? 'Formato nao suportado pela memoria'
-          : 'Nao foi possivel salvar';
+          ? 'Formato não suportado pela memória'
+          : 'Não foi possivel salvar';
       toast({ title: msg, variant: result.error.kind === 'duplicate' ? 'default' : 'destructive' });
       if (result.error.kind === 'duplicate') {
         setSavedIds((prev) => new Set([...prev, attachmentId]));
@@ -49,10 +49,10 @@ export function MessageAttachments({ messageId, attachmentIds }: MessageAttachme
     }
     setSavedIds((prev) => new Set([...prev, attachmentId]));
     toast({
-      title: 'Salvo na memoria',
+      title: 'Salvo na memória',
       description: 'A IA ja pode usar este conteudo nas respostas.',
       action: (
-        <ToastAction altText="Ver na memoria" onClick={() => navigateToView('cerebro', { cerebroTab: 'memoria' })}>
+        <ToastAction altText="Ver na memória" onClick={() => navigateToView('cerebro', { cerebroTab: 'memória' })}>
           Ver
         </ToastAction>
       ),
@@ -74,9 +74,9 @@ export function MessageAttachments({ messageId, attachmentIds }: MessageAttachme
               if (!isSaved) handleSaveToMemory(att.id, att.original_filename ?? null);
             }}
             disabled={isReadOnly || isSaved}
-            title={isSaved ? 'Ja salvo na memoria' : 'Salvar na memoria'}
+            title={isSaved ? 'Ja salvo na memória' : 'Salvar na memória'}
             className="rounded-md bg-background/80 backdrop-blur p-1.5 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            aria-label="Salvar na memoria"
+            aria-label="Salvar na memória"
           >
             {isSaved ? <Check className="h-3.5 w-3.5" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
           </button>
@@ -130,8 +130,8 @@ export function MessageAttachments({ messageId, attachmentIds }: MessageAttachme
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   {formatFileSize(att.size_bytes)}
-                  {att.extraction_status === 'failed' && ' · nao foi possivel ler'}
-                  {att.extraction_status === 'skipped' && ' · conteudo nao processado'}
+                  {att.extraction_status === 'failed' && ' · não foi possivel ler'}
+                  {att.extraction_status === 'skipped' && ' · conteudo não processado'}
                 </p>
               </div>
               <Download className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />

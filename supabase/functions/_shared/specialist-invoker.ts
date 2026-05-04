@@ -60,6 +60,8 @@ export async function invokeSpecialist(
     return { summary: 'Falha na configuracao de delegacao (env).' };
   }
 
+  const t0 = Date.now();
+  console.log(`[specialist] -> POST ${args.endpoint} q="${args.question.slice(0, 80)}"`);
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/${args.endpoint}`, {
       method: 'POST',
@@ -77,14 +79,18 @@ export async function invokeSpecialist(
       }),
     });
 
+    const rawText = await res.text();
+    console.log(`[specialist] <- ${args.endpoint} status=${res.status} in ${Date.now() - t0}ms (body ${rawText.length}b)`);
     let body: SpecialistResponse;
     try {
-      body = (await res.json()) as SpecialistResponse;
+      body = JSON.parse(rawText) as SpecialistResponse;
     } catch {
+      console.error(`[specialist] ${args.endpoint} non-JSON body (first 500): ${rawText.slice(0, 500)}`);
       return { summary: `Specialist ${args.endpoint} retornou resposta invalida (HTTP ${res.status}).` };
     }
 
     if (!res.ok || !body.ok) {
+      console.error(`[specialist] ${args.endpoint} failed: status=${res.status} ok=${body.ok} error=${body.error ?? 'unknown'} fullBody=${rawText.slice(0, 300)}`);
       return {
         summary: `Specialist ${args.endpoint} falhou: ${body.error ?? 'unknown'}. Continue com tools diretas se possivel.`,
       };

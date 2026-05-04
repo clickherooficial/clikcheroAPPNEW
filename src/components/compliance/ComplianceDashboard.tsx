@@ -22,7 +22,7 @@ export function ComplianceDashboard() {
       <Card>
         <CardContent className="p-12 text-center">
           <ShieldCheck className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhum anuncio analisado</h3>
+          <h3 className="text-lg font-semibold mb-2">Nenhum anúncio analisado</h3>
           <p className="text-sm text-muted-foreground">Clique em "Analisar Agora" para iniciar a primeira varredura de compliance.</p>
         </CardContent>
       </Card>
@@ -37,7 +37,7 @@ export function ComplianceDashboard() {
     { title: 'Total Analisados', value: stats.total, icon: BarChart3, color: 'text-blue-400' },
     { title: 'Conformes', value: `${pctHealthy}%`, icon: ShieldCheck, color: 'text-emerald-400' },
     { title: 'Alertas', value: `${pctWarning}%`, icon: AlertTriangle, color: 'text-amber-400' },
-    { title: 'Criticos', value: `${pctCritical}%`, icon: XCircle, color: 'text-red-400' },
+    { title: 'Críticos', value: `${pctCritical}%`, icon: XCircle, color: 'text-red-400' },
     { title: 'Pausados', value: stats.paused, icon: PauseCircle, color: 'text-orange-400' },
   ];
 

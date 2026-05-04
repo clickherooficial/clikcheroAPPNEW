@@ -14,7 +14,7 @@ export function MetaAssetPickerModal({ open, onOpenChange, onComplete }: Props) 
         <DialogHeader className="px-6 py-4 border-b border-border/50">
           <DialogTitle>Selecione seus ativos Meta</DialogTitle>
           <DialogDescription>
-            Escolha as Business Managers, contas de anuncio e paginas do Facebook que deseja conectar.
+            Escolha as Business Managers, contas de anúncio e páginas do Facebook que deseja conectar.
             Todos os dados do app (Dashboard, FURY, Compliance) virao dessas contas.
           </DialogDescription>
         </DialogHeader>

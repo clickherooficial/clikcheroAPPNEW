@@ -17,7 +17,7 @@ const UNIT_LABELS: Record<string, string> = {
   OUTCOME_LEADS: 'leads',
   OUTCOME_SALES: 'vendas',
   OUTCOME_TRAFFIC: 'visitantes',
-  OUTCOME_ENGAGEMENT: 'interacoes',
+  OUTCOME_ENGAGEMENT: 'interações',
 };
 
 interface Props {
@@ -35,7 +35,7 @@ export function BudgetSliderStep({ objective, goalPerWeek, budget, onBudgetChang
   const { cpl, dataSource } = useMemo(() => {
     const tenant = benchmarks?.find((b) => b.objective === objective);
     if (tenant && tenant.samples_count >= 7 && tenant.avg_cpl) {
-      return { cpl: Number(tenant.avg_cpl), dataSource: 'Historico do tenant' };
+      return { cpl: Number(tenant.avg_cpl), dataSource: 'Histórico do tenant' };
     }
     return { cpl: MARKET_FALLBACK[objective] ?? 15, dataSource: 'Benchmark de mercado' };
   }, [benchmarks, objective]);
@@ -47,13 +47,13 @@ export function BudgetSliderStep({ objective, goalPerWeek, budget, onBudgetChang
   const closeToGoal = projectedVolume >= goalPerWeek * 0.8;
 
   const statusColor = meetsGoal ? 'text-emerald-400' : closeToGoal ? 'text-amber-400' : 'text-red-400';
-  const statusLabel = meetsGoal ? 'Atinge a meta' : closeToGoal ? 'Proximo da meta' : 'Insuficiente';
-  const unit = UNIT_LABELS[objective] ?? 'conversoes';
+  const statusLabel = meetsGoal ? 'Atinge a meta' : closeToGoal ? 'Próximo da meta' : 'Insuficiente';
+  const unit = UNIT_LABELS[objective] ?? 'conversões';
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Quanto voce quer investir?</h3>
+        <h3 className="text-lg font-semibold mb-1">Quanto você quer investir?</h3>
         <p className="text-sm text-muted-foreground">Ajuste o slider e veja a projecao em tempo real.</p>
       </div>
 
@@ -109,7 +109,7 @@ export function BudgetSliderStep({ objective, goalPerWeek, budget, onBudgetChang
 
       <Button onClick={onGenerate} disabled={isGenerating} className="w-full" size="lg">
         {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-        {isGenerating ? 'Analisando com IA...' : 'Gerar Recomendacao com IA'}
+        {isGenerating ? 'Analisando com IA...' : 'Gerar Recomendação com IA'}
       </Button>
     </div>
   );

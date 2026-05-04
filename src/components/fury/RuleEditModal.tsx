@@ -56,7 +56,7 @@ export function RuleEditModal({ open, envelope, messageId, onClose }: Props) {
             />
           </div>
           <div>
-            <Label htmlFor="rule-desc">Descricao</Label>
+            <Label htmlFor="rule-desc">Descrição</Label>
             <Textarea
               id="rule-desc"
               value={description}

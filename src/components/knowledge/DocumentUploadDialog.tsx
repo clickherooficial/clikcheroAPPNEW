@@ -49,7 +49,7 @@ export function DocumentUploadDialog({ open, onOpenChange }: Props) {
         result.error.kind === 'too_large'
           ? `Arquivo maior que ${(KB_MAX_FILE_BYTES / 1024 / 1024).toFixed(0)}MB`
           : result.error.kind === 'unsupported_mime'
-          ? 'Formato nao suportado (PDF, DOCX, XLSX, CSV, JSON, TXT, MD ou imagem)'
+          ? 'Formato não suportado (PDF, DOCX, XLSX, CSV, JSON, TXT, MD ou imagem)'
           : result.error.kind === 'quota_exceeded'
           ? `Quota de ${result.error.dimension} atingida`
           : 'Erro ao enviar arquivo';
@@ -58,7 +58,7 @@ export function DocumentUploadDialog({ open, onOpenChange }: Props) {
     }
     toast({
       title: 'Documento enviado',
-      description: 'Processamento em andamento — voce vera o status na lista.',
+      description: 'Processamento em andamento — você vera o status na lista.',
     });
     setFile(null);
     setTitle('');
@@ -71,7 +71,7 @@ export function DocumentUploadDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Adicionar a memoria</DialogTitle>
+          <DialogTitle>Adicionar a memória</DialogTitle>
           <DialogDescription>
             A IA do Fury vai indexar o conteudo e poder consulta-lo em conversas.
           </DialogDescription>
@@ -120,7 +120,7 @@ export function DocumentUploadDialog({ open, onOpenChange }: Props) {
           </div>
 
           <div>
-            <Label>Descricao (opcional)</Label>
+            <Label>Descrição (opcional)</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={2} disabled={busy} />
           </div>
 

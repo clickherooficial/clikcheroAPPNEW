@@ -12,8 +12,8 @@ const ACTION_META: Record<
   pause_campaign: { icon: Pause, color: 'text-orange-400', label: 'Pausar campanha' },
   reactivate_campaign: { icon: Play, color: 'text-emerald-400', label: 'Reativar campanha' },
   update_budget: { icon: DollarSign, color: 'text-sky-400', label: 'Alterar budget' },
-  pause_ad: { icon: Pause, color: 'text-orange-400', label: 'Pausar anuncio' },
-  reactivate_ad: { icon: Play, color: 'text-emerald-400', label: 'Reativar anuncio' },
+  pause_ad: { icon: Pause, color: 'text-orange-400', label: 'Pausar anúncio' },
+  reactivate_ad: { icon: Play, color: 'text-emerald-400', label: 'Reativar anúncio' },
 };
 
 const STATUS_META: Record<string, { color: string; label: string }> = {
@@ -40,10 +40,10 @@ const ApprovalsView = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground tracking-tight flex items-center gap-2">
           <ShieldAlert className="h-6 w-6 text-primary" />
-          Aprovacoes
+          Aprovações
         </h1>
         <p className="text-sm text-muted-foreground mt-1.5">
-          Acoes propostas pela IA aguardando sua confirmacao. Pendentes expiram em 5 minutos.
+          Ações propostas pela IA aguardando sua confirmação. Pendentes expiram em 5 minutos.
         </p>
       </div>
 
@@ -74,7 +74,7 @@ const ApprovalsView = () => {
 
           <Section
             title={`Pendentes (${pending.length})`}
-            empty="Nenhuma acao aguardando aprovacao."
+            empty="Nenhuma ação aguardando aprovação."
             className={pendingPlans.length > 0 ? 'mt-6' : undefined}
           >
             <div className="space-y-3">
@@ -91,7 +91,7 @@ const ApprovalsView = () => {
 
           {historyPlans.length > 0 && (
             <Section
-              title={`Historico de planos (${historyPlans.length})`}
+              title={`Histórico de planos (${historyPlans.length})`}
               empty="Sem planos anteriores."
               className="mt-8"
             >
@@ -103,7 +103,7 @@ const ApprovalsView = () => {
             </Section>
           )}
 
-          <Section title={`Historico (${history.length})`} empty="Sem acoes anteriores." className="mt-8">
+          <Section title={`Histórico (${history.length})`} empty="Sem ações anteriores." className="mt-8">
             <div className="space-y-2">
               {history.slice(0, 30).map((a) => (
                 <HistoryRow key={a.id} approval={a} />
@@ -307,7 +307,7 @@ function PendingPlanCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[11px] font-medium uppercase tracking-wider text-primary">
-              Plano multi-step ({plan.steps.length} acoes)
+              Plano multi-step ({plan.steps.length} ações)
             </div>
             <div className="text-sm font-medium text-foreground mt-0.5">
               {plan.human_summary}
@@ -391,7 +391,7 @@ function PlanHistoryRow({ plan }: { plan: PlanWithSteps }) {
       <Layers className="h-3.5 w-3.5 shrink-0 text-primary/70" />
       <div className="text-sm text-foreground/80 truncate flex-1">
         {plan.human_summary}
-        <span className="ml-2 text-[11px] text-muted-foreground">({plan.steps.length} acoes)</span>
+        <span className="ml-2 text-[11px] text-muted-foreground">({plan.steps.length} ações)</span>
       </div>
       <span
         className={cn(

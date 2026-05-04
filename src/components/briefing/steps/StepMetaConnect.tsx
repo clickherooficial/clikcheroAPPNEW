@@ -37,19 +37,19 @@ export function StepMetaConnect({ disabled, onFinish, onBack }: Props) {
     <div className="space-y-5">
       <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
         <p>
-          Para importar campanhas, metricas e paginas do Facebook/Instagram, conecte a conta Meta ligada ao seu
-          negocio (inclui Business Manager e contas de anuncio).
+          Para importar campanhas, métricas e páginas do Facebook/Instagram, conecte a conta Meta ligada ao seu
+          negocio (inclui Business Manager e contas de anúncio).
         </p>
         <p className="text-xs">
           Se preferir configurar depois, use <strong className="text-foreground">Ir para o app</strong> — em
-          Integracoes voce faz o mesmo fluxo quando quiser.
+          Integrações você faz o mesmo fluxo quando quiser.
         </p>
       </div>
 
       <ul className="flex flex-wrap gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         <li className="rounded-full bg-muted/50 px-2.5 py-1 ring-1 ring-border">Business Manager</li>
-        <li className="rounded-full bg-muted/50 px-2.5 py-1 ring-1 ring-border">Contas de anuncio</li>
-        <li className="rounded-full bg-muted/50 px-2.5 py-1 ring-1 ring-border">Paginas</li>
+        <li className="rounded-full bg-muted/50 px-2.5 py-1 ring-1 ring-border">Contas de anúncio</li>
+        <li className="rounded-full bg-muted/50 px-2.5 py-1 ring-1 ring-border">Páginas</li>
       </ul>
 
       {isLoading ? (
@@ -88,7 +88,7 @@ export function StepMetaConnect({ disabled, onFinish, onBack }: Props) {
       ) : (
         <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center space-y-4">
           <p className="text-sm text-foreground/90">
-            Clique abaixo e faca login com o Facebook que administra o seu anuncio. Depois, escolha quais BMs e
+            Clique abaixo e faca login com o Facebook que administra o seu anúncio. Depois, escolha quais BMs e
             contas o app pode usar.
           </p>
           <Button
@@ -122,7 +122,7 @@ export function StepMetaConnect({ disabled, onFinish, onBack }: Props) {
           queryClient.invalidateQueries({ queryKey: ['meta-assets'] });
           toast({
             title: 'Ativos salvos',
-            description: 'Sincronizacao em background. Voce ja pode usar o painel.',
+            description: 'Sincronizacao em background. Você ja pode usar o painel.',
           });
         }}
       />

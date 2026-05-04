@@ -10,7 +10,7 @@ import { ComplianceDetail } from './ComplianceDetail';
 const HEALTH_BADGE: Record<string, { label: string; className: string; Icon: typeof ShieldCheck }> = {
   healthy: { label: 'Conforme', className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', Icon: ShieldCheck },
   warning: { label: 'Alerta', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30', Icon: AlertTriangle },
-  critical: { label: 'Critico', className: 'bg-red-500/15 text-red-400 border-red-500/30', Icon: XCircle },
+  critical: { label: 'Crítico', className: 'bg-red-500/15 text-red-400 border-red-500/30', Icon: XCircle },
 };
 
 export function ComplianceTable() {
@@ -41,7 +41,7 @@ export function ComplianceTable() {
     return (
       <Card>
         <CardContent className="p-12 text-center text-muted-foreground">
-          Nenhum anuncio analisado ainda. Clique em "Analisar Agora".
+          Nenhum anúncio analisado ainda. Clique em "Analisar Agora".
         </CardContent>
       </Card>
     );
@@ -53,12 +53,12 @@ export function ComplianceTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Anuncio</TableHead>
+              <TableHead>Anúncio</TableHead>
               <TableHead className="w-[100px]">Score</TableHead>
               <TableHead className="w-[120px]">Status</TableHead>
               <TableHead className="w-[100px]">Copy</TableHead>
               <TableHead className="w-[100px]">Visual</TableHead>
-              <TableHead className="w-[80px]">Acoes</TableHead>
+              <TableHead className="w-[80px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

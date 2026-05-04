@@ -35,3 +35,4 @@ dist-ssr
 .env.local.bak
 .env.local.tmp
 .env.*.bak
+graphify-out/

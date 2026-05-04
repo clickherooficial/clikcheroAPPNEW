@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { z } from 'https://esm.sh/zod@3.23.8';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { runComplianceCheckRaw } from '../_shared/compliance-runner.ts';
 
 /**
  * Campaign Publisher — cria campanha Meta em 3 niveis com compliance gate e rollback.
@@ -11,8 +12,6 @@ import { getCorsHeaders } from '../_shared/cors.ts';
 
 const GRAPH_VERSION = Deno.env.get('META_GRAPH_API_VERSION') ?? 'v22.0';
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const ANTHROPIC_MODEL = 'claude-sonnet-4-5-20241022';
 const META_RETRY_DELAYS = [1000, 3000];
 
 // ============================================================
@@ -42,7 +41,7 @@ const AdsetSchema = z.object({
     genders: z.array(z.number().int().min(1).max(2)).optional(),
     interests: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
   }),
-  optimization_goal: z.enum(['LINK_CLICKS', 'LANDING_PAGE_VIEWS', 'CONVERSIONS', 'REACH', 'IMPRESSIONS', 'LEAD_GENERATION']),
+  optimization_goal: z.enum(['LINK_CLICKS', 'LANDING_PAGE_VIEWS', 'OFFSITE_CONVERSIONS', 'REACH', 'IMPRESSIONS', 'LEAD_GENERATION']),
   billing_event: z.enum(['IMPRESSIONS', 'LINK_CLICKS']).default('IMPRESSIONS'),
   start_time: z.string().datetime().optional(),
 });
@@ -61,148 +60,20 @@ const AdSchema = z.object({
 });
 
 // ============================================================
-// Compliance inline (simplificado)
+// Compliance — extraido para _shared/compliance-runner.ts
+// (task 2.1 da spec chat-publish-flow)
 // ============================================================
-
-async function fetchImageAsBase64(url: string): Promise<{ base64: string; mediaType: string } | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) return null;
-    const contentType = res.headers.get('content-type') ?? 'image/jpeg';
-    const buf = await res.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += 8192) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-    }
-    const base64 = btoa(binary);
-    const mediaType = contentType.includes('png') ? 'image/png'
-      : contentType.includes('webp') ? 'image/webp'
-      : contentType.includes('gif') ? 'image/gif' : 'image/jpeg';
-    return { base64, mediaType };
-  } catch {
-    return null;
-  }
-}
-
-async function callClaudeForCompliance(apiKey: string, systemPrompt: string, content: Array<{ type: string; [key: string]: unknown }>): Promise<{ score: number; violations: Array<{ severity: string; description: string }> } | null> {
-  try {
-    const res = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: ANTHROPIC_MODEL, max_tokens: 1024, system: systemPrompt, messages: [{ role: 'user', content }] }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text ?? '';
-    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const jsonStr = match ? match[1].trim() : raw.trim();
-    const parsed = JSON.parse(jsonStr);
-    return {
-      score: Math.max(0, Math.min(100, parsed.score ?? 100)),
-      violations: Array.isArray(parsed.violations) ? parsed.violations : [],
-    };
-  } catch {
-    return null;
-  }
-}
-
+//
+// Wrapper fino para preservar a assinatura local consumida no fluxo.
 async function checkCompliance(
   supabase: SupabaseClient,
   companyId: string,
   ad: z.infer<typeof AdSchema>,
 ): Promise<{ score: number; violations: Array<{ severity: string; description: string }>; blocked: boolean }> {
-  // Busca ANTHROPIC_API_KEY
-  const { data: key } = await supabase.rpc('get_vault_secret', { secret_name: 'ANTHROPIC_API_KEY' });
-  const apiKey = (key as string | null) ?? Deno.env.get('ANTHROPIC_API_KEY') ?? '';
-
-  // Busca config + blacklist
-  const { data: company } = await supabase
-    .from('companies')
-    .select('takedown_threshold, brand_colors, brand_logo_url')
-    .eq('id', companyId)
-    .single();
-
-  const { data: rules } = await supabase
-    .from('compliance_rules')
-    .select('value, rule_type')
-    .eq('company_id', companyId)
-    .eq('is_active', true)
-    .in('rule_type', ['blacklist_term', 'required_term']);
-
-  const blacklist = (rules ?? []).filter((r) => r.rule_type === 'blacklist_term').map((r) => r.value);
-  const required = (rules ?? []).filter((r) => r.rule_type === 'required_term').map((r) => r.value);
-  const threshold = (company?.takedown_threshold as number | null) ?? 50;
-
-  if (!apiKey) {
-    // Sem API key: nao bloqueia, mas retorna score neutro
-    return { score: 100, violations: [], blocked: false };
-  }
-
-  // --- Copy analysis ---
-  const copy = `Headline: ${ad.headline}\nBody: ${ad.body}${ad.description ? `\nDescription: ${ad.description}` : ''}`;
-  const copySystem = `Voce e um especialista em compliance de anuncios Meta Ads.
-Analise o copy do anuncio e retorne APENAS um JSON valido (sem markdown).
-Regras: critical=-40pts, warning=-20pts, info=-5pts. Score 0-100.`;
-  const copyUser = `COPY:
-${copy}
-
-TERMOS PROIBIDOS: ${blacklist.length > 0 ? blacklist.join(', ') : '(nenhum)'}
-TERMOS OBRIGATORIOS: ${required.length > 0 ? required.join(', ') : '(nenhum)'}
-
-Retorne: {"score": <0-100>, "violations": [{"severity": "info|warning|critical", "description": "<texto>"}]}`;
-
-  const copyResult = await callClaudeForCompliance(apiKey, copySystem, [{ type: 'text', text: copyUser }]);
-  const copyScore = copyResult?.score ?? 100;
-  const copyViolations = copyResult?.violations ?? [];
-
-  // --- Image analysis (se houver imagem e brand config) ---
-  let imageScore: number | null = null;
-  let imageViolations: Array<{ severity: string; description: string }> = [];
-
-  if (ad.image_url) {
-    const img = await fetchImageAsBase64(ad.image_url);
-    if (img) {
-      const brandColors = (company?.brand_colors as string[] | null) ?? [];
-      const brandLogoUrl = (company?.brand_logo_url as string | null) ?? null;
-
-      const imgSystem = `Voce e especialista em compliance visual de anuncios Meta Ads.
-Retorne APENAS um JSON valido (sem markdown). Regras: critical=-40, warning=-20, info=-5. Score 0-100.`;
-
-      const colorSection = brandColors.length > 0
-        ? `\nCORES DA MARCA (hex): ${brandColors.join(', ')}\nVerifique aderencia.`
-        : '';
-
-      const imgUser = `TERMOS PROIBIDOS: ${blacklist.length > 0 ? blacklist.join(', ') : '(nenhum)'}${colorSection}
-
-Tarefas: extraia texto (OCR), verifique termos proibidos no texto extraido, detecte claims visuais problematicos (antes/depois, numeros sem fonte), elementos enganosos.
-
-Retorne: {"score": <0-100>, "violations": [{"severity": "info|warning|critical", "description": "<texto>"}]}`;
-
-      const imgContent: Array<{ type: string; [key: string]: unknown }> = [];
-      if (brandLogoUrl) {
-        const logoImg = await fetchImageAsBase64(brandLogoUrl);
-        if (logoImg) imgContent.push({ type: 'image', source: { type: 'base64', media_type: logoImg.mediaType, data: logoImg.base64 } });
-      }
-      imgContent.push({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } });
-      imgContent.push({ type: 'text', text: imgUser });
-
-      const result = await callClaudeForCompliance(apiKey, imgSystem, imgContent);
-      if (result) {
-        imageScore = result.score;
-        imageViolations = result.violations;
-      }
-    }
-  }
-
-  // --- Final score: ponderado 60% copy + 40% visual (ou so copy) ---
-  const finalScore = imageScore !== null
-    ? Math.round(copyScore * 0.6 + imageScore * 0.4)
-    : copyScore;
-  const allViolations = [...copyViolations, ...imageViolations];
-  const blocked = finalScore < threshold;
-
-  return { score: finalScore, violations: allViolations, blocked };
+  return await runComplianceCheckRaw(supabase, companyId, {
+    copy: { headline: ad.headline, body: ad.body, description: ad.description },
+    image_url: ad.image_url,
+  });
 }
 
 // ============================================================
@@ -358,7 +229,7 @@ Deno.serve(async (req) => {
   }
 
   // ---- Parse body ----
-  let body: { draft_id?: string; ad_account_id?: string; campaign_data?: unknown; adset_data?: unknown; ad_data?: unknown; force?: boolean } = {};
+  let body: { draft_id?: string; ad_account_id?: string; campaign_data?: unknown; adset_data?: unknown; ad_data?: unknown; force?: boolean; auto_activate?: boolean } = {};
   try {
     body = await req.json();
   } catch {
@@ -561,6 +432,11 @@ Deno.serve(async (req) => {
       status: campaignData.status,
       buying_type: campaignData.buying_type,
       special_ad_categories: JSON.stringify(campaignData.special_ad_categories),
+      // Meta API exige explicito quando NAO usa CBO (campaign-level budget).
+      // Nosso fluxo poe budget no adset, entao false.
+      is_adset_budget_sharing_enabled: false,
+      // bid_strategy fica no ADSET (nao na campanha) porque budget tambem ta no adset (ABO).
+      // Passar bid_strategy na campaign exigiria daily_budget na campaign tambem.
     };
     if (campaignData.start_time) payload.start_time = campaignData.start_time;
     if (campaignData.stop_time) payload.stop_time = campaignData.stop_time;
@@ -592,6 +468,9 @@ Deno.serve(async (req) => {
       billing_event: adsetData.billing_event,
       targeting: adsetData.targeting,
       status: campaignData.status,
+      // Meta API exige bid_strategy quando adset tem budget (ABO).
+      // LOWEST_COST_WITHOUT_CAP = sem limite (Meta otimiza alcance dado o budget).
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
     };
     if (adsetData.daily_budget) payload.daily_budget = adsetData.daily_budget;
     if (adsetData.lifetime_budget) payload.lifetime_budget = adsetData.lifetime_budget;
@@ -688,10 +567,46 @@ Deno.serve(async (req) => {
     finished_at: new Date().toISOString(),
   });
 
+  // ============================================================
+  // 5. Auto-activate (chat-publish-flow Fix 2)
+  // Ativa campanha + adset + ad em sequencia. Se algum falhar, marca activated=false
+  // e deixa o caller decidir (geralmente publish-campaign-handler).
+  // Best-effort: nao faz rollback do create se a ativacao falhar — entidades ja existem
+  // no Meta e podem ser ativadas manualmente depois.
+  // ============================================================
+  let activated = false;
+  let activation_error: string | null = null;
+
+  if (body.auto_activate && ids.campaign_id && ids.adset_id && ids.ad_id) {
+    try {
+      // Ordem: campaign -> adset -> ad. Sequencial pra fail-fast.
+      const targets = [
+        { id: ids.campaign_id, kind: 'campaign' },
+        { id: ids.adset_id, kind: 'adset' },
+        { id: ids.ad_id, kind: 'ad' },
+      ];
+      for (const t of targets) {
+        const r = await metaCall(metaToken, `/${t.id}`, 'POST', { status: 'ACTIVE' });
+        if (!r.ok) {
+          activation_error = `${t.kind}_activate_failed: ${JSON.stringify(r.data).slice(0, 200)}`;
+          break;
+        }
+      }
+      activated = !activation_error;
+      if (activated) {
+        await updatePublication({ status: 'live', current_step: 'activated' });
+      }
+    } catch (e) {
+      activation_error = `activation_threw: ${(e as Error).message}`;
+    }
+  }
+
   return new Response(JSON.stringify({
     status: 'live',
     publication_id: publicationId,
     meta_ids: ids,
+    activated,
+    activation_error,
     manager_url: `https://business.facebook.com/adsmanager/manage/campaigns?selected_campaign_ids=${ids.campaign_id}`,
   }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
 });

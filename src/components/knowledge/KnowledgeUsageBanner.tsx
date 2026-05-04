@@ -32,14 +32,14 @@ export function KnowledgeUsageBanner() {
       {isBlocked ? <ShieldAlert className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
       <AlertTitle>
         {isBlocked
-          ? 'Quota da memoria atingida'
-          : 'Quota da memoria perto do limite'}
+          ? 'Quota da memória atingida'
+          : 'Quota da memória perto do limite'}
       </AlertTitle>
       <AlertDescription className="space-y-1">
         <p>
           {isBlocked
-            ? `Voce atingiu 100% de ${labels}. Novos uploads/processamento ficam bloqueados ate fazer upgrade ou liberar espaco.`
-            : `Voce esta usando >=80% de ${labels}. Considere fazer upgrade ou limpar documentos antigos.`}
+            ? `Você atingiu 100% de ${labels}. Novos uploads/processamento ficam bloqueados ate fazer upgrade ou liberar espaco.`
+            : `Você esta usando >=80% de ${labels}. Considere fazer upgrade ou limpar documentos antigos.`}
         </p>
         <p className="text-xs">
           {formatBytes(usage.storage.bytes)} / {formatBytes(usage.storage.max)} ·{' '}

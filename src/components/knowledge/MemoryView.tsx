@@ -57,7 +57,7 @@ export default function MemoryView() {
     <div className="container max-w-5xl py-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Memoria</h1>
+          <h1 className="text-2xl font-bold">Memória</h1>
           <p className="text-sm text-muted-foreground">
             Documentos que a IA do Fury usa para gerar criativos e responder com base no seu negocio.
           </p>
@@ -73,7 +73,7 @@ export default function MemoryView() {
         <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por titulo ou descricao..."
+            placeholder="Buscar por titulo ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && applySearch()}

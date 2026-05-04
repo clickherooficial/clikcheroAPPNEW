@@ -153,7 +153,7 @@ export function DocumentDetailDrawer({ document, open, onOpenChange, highlightCh
               <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} disabled={busy || isReadOnly} />
             </div>
             <div>
-              <Label>Descricao</Label>
+              <Label>Descrição</Label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={2} disabled={busy || isReadOnly} />
             </div>
             <div>

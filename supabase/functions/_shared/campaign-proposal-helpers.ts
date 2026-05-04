@@ -39,6 +39,8 @@ export interface PrereqGuardResult {
   missing: PrereqErrorKind[];
   // Quando ha >1 page ativa, marcamos pra agente perguntar no chat.
   pages_ambiguous?: Array<{ id: string; page_id: string; name: string | null }>;
+  // Quando ha >1 ad account ativa, marcamos pra agente perguntar no chat.
+  accounts_ambiguous?: Array<{ id: string; account_id: string; name: string | null }>;
 }
 
 export type CampaignObjective = 'SALES' | 'LEADS' | 'AWARENESS' | 'TRAFFIC' | 'ENGAGEMENT';
@@ -222,6 +224,14 @@ export async function checkPrereqs(
       id: p.id,
       page_id: p.page_id,
       name: p.page_name,
+    }));
+  }
+
+  if ((accounts ?? []).length > 1) {
+    result.accounts_ambiguous = (accounts ?? []).map((a) => ({
+      id: a.id,
+      account_id: a.account_id,
+      name: a.account_name,
     }));
   }
 

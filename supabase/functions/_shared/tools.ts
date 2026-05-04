@@ -832,6 +832,10 @@ export const CHAT_TOOLS = [
             type: 'string',
             description: 'Page ID OU nome (ou parte do nome, case-insensitive) da Pagina do Facebook escolhida pelo usuario. Use quando o tenant tem mais de uma Pagina ativa e voce ja perguntou + o usuario respondeu. Ex: "vendedor mestre", "Vendedor Mestre", ou o page_id numerico.',
           },
+          account_id: {
+            type: 'string',
+            description: 'Account ID OU nome (ou parte do nome, case-insensitive) da Conta de Anuncios Meta escolhida pelo usuario. Use quando o tenant tem mais de uma Ad Account ativa e voce ja perguntou + o usuario respondeu. Ex: "vendedor mestre", "CA Vendedormestre", ou o account_id numerico.',
+          },
         },
         required: ['creative_id'],
       },

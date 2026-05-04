@@ -48,6 +48,7 @@ const InputSchema = z.object({
     cta: z.enum(['LEARN_MORE', 'SHOP_NOW', 'SIGN_UP', 'SUBSCRIBE', 'DOWNLOAD', 'CONTACT_US', 'GET_OFFER', 'BOOK_NOW']).optional(),
   }).optional(),
   page_id: z.string().optional(), // page_id OU nome parcial (resolve no handler)
+  account_id: z.string().optional(), // ad account id OU nome parcial (resolve no handler)
 });
 
 export type ProposeCampaignInput = z.infer<typeof InputSchema>;
@@ -130,12 +131,30 @@ export async function handleProposeCampaign(
     );
     if (match) {
       ctx.page = { id: match.id, page_id: match.page_id, name: match.name };
-      // limpa pages_ambiguous pra nao acionar o branch de pergunta abaixo
       prereq.pages_ambiguous = undefined;
     }
   }
 
-  // 3.2) Page ambigua: agente pergunta no chat antes de publicar
+  // 3.2) Resolver account_id quando o user escolheu uma Ad Account.
+  if (input.account_id && prereq.accounts_ambiguous && prereq.accounts_ambiguous.length > 1) {
+    const needle = input.account_id.trim().toLowerCase();
+    const match = prereq.accounts_ambiguous.find((a) =>
+      a.account_id === input.account_id ||
+      (a.name ?? '').toLowerCase().includes(needle)
+    );
+    if (match) {
+      ctx.ad_account = { id: match.id, account_id: match.account_id, name: match.name };
+      prereq.accounts_ambiguous = undefined;
+    }
+  }
+
+  // 3.3) Account ambigua: agente pergunta no chat antes de publicar
+  if (prereq.accounts_ambiguous && prereq.accounts_ambiguous.length > 1) {
+    const list = prereq.accounts_ambiguous.map((a) => `- ${a.name ?? a.account_id}`).join('\n');
+    return `Voce tem mais de uma Conta de Anuncios Meta ativa. Pergunte ao usuario LITERALMENTE: "Qual conta de anuncios voce quer usar pra esse anuncio?" e liste:\n${list}\n\nQuando ele responder com o nome da conta, RE-INVOQUE propose_campaign com o parametro account_id contendo o que ele falou (nome ou account_id, match case-insensitive).`;
+  }
+
+  // 3.4) Page ambigua: agente pergunta no chat antes de publicar
   if (prereq.pages_ambiguous && prereq.pages_ambiguous.length > 1) {
     const list = prereq.pages_ambiguous.map((p) => `- ${p.name ?? p.page_id}`).join('\n');
     return `Voce tem mais de uma Pagina do Facebook ativa. Pergunte ao usuario LITERALMENTE: "Qual dessas Paginas voce quer usar pra esse anuncio?" e liste:\n${list}\n\nNao chame propose_campaign de novo ate o usuario escolher; quando ele responder com o nome da Pagina, RE-INVOQUE propose_campaign com o parametro page_id contendo o nome ou page_id que ele falou (ex: page_id="Vendedor Mestre").`;

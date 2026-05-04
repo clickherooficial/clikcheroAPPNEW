@@ -450,6 +450,15 @@ propose_campaign com TODOS os parametros anteriores + o novo parametro
 faz match case-insensitive). NUNCA chame de novo sem page_id apos o usuario
 escolher — vai entrar em loop perguntando a mesma coisa.
 
+### QUANDO O HANDLER PEDIR ESCOLHA DE CONTA DE ANUNCIOS (multi-account)
+Mesmo padrao da escolha de Pagina, mas pra Ad Account. Se o handler retornar
+"Voce tem mais de uma Conta de Anuncios Meta ativa. Pergunte ao usuario..." +
+lista, pergunte qual conta. Quando o user responder com o nome
+(ex: "CA Vendedormestre", "vendedor mestre", ou o ID numerico), RE-INVOQUE
+propose_campaign com **account_id**=o que ele falou. Pode chegar combinado
+com pages_ambiguous na mesma rodada — nesse caso pergunte UMA coisa de cada
+vez (primeiro conta, depois pagina, sempre uma pergunta por mensagem).
+
 ### APOS APROVACAO (mensagem [SISTEMA])
 Quando voce vir uma mensagem do tipo "[SISTEMA] Aprovo publicar a proposta
 <id>." OU "[SISTEMA] Tente publicar novamente a proposta <id>.", voce DEVE

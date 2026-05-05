@@ -241,10 +241,10 @@ const Register = () => {
             })}
           </div>
           <Progress value={(step / 3) * 100} className="h-1.5 bg-muted" />
-          <div className="flex justify-between mt-2 text-[11px] text-[#ecedef]/40">
-            <span className={cn(step >= 1 && 'text-[#ecedef]/80')}>Conta</span>
-            <span className={cn(step >= 2 && 'text-[#ecedef]/80')}>Organização</span>
-            <span className={cn(step >= 3 && 'text-[#ecedef]/80')}>Finalizar</span>
+          <div className="flex justify-between mt-2 text-[11px] text-muted-foreground/70">
+            <span className={cn(step >= 1 && 'text-foreground font-medium')}>Conta</span>
+            <span className={cn(step >= 2 && 'text-foreground font-medium')}>Organização</span>
+            <span className={cn(step >= 3 && 'text-foreground font-medium')}>Finalizar</span>
           </div>
         </div>
 
@@ -269,7 +269,7 @@ const Register = () => {
                     name="displayName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <User className="h-3.5 w-3.5" /> Seu nome
                         </FormLabel>
                         <FormControl>
@@ -290,7 +290,7 @@ const Register = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <Mail className="h-3.5 w-3.5" /> Email
                         </FormLabel>
                         <FormControl>
@@ -312,7 +312,7 @@ const Register = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <Lock className="h-3.5 w-3.5" /> Senha
                         </FormLabel>
                         <FormControl>
@@ -332,14 +332,14 @@ const Register = () => {
                                 key={i}
                                 className={cn(
                                   'h-1 flex-1 rounded-full transition-all duration-300',
-                                  strength.score >= i ? strength.color : 'bg-white/[0.06]',
+                                  strength.score >= i ? strength.color : 'bg-muted',
                                 )}
                               />
                             ))}
                           </div>
                           {strength.label && (
-                            <p className="text-[11px] text-[#ecedef]/50">
-                              Forca: <span className="text-[#ecedef]/80">{strength.label}</span>
+                            <p className="text-[11px] text-muted-foreground">
+                              Forca: <span className="text-foreground font-medium">{strength.label}</span>
                             </p>
                           )}
                         </div>
@@ -353,7 +353,7 @@ const Register = () => {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <Lock className="h-3.5 w-3.5" /> Confirmar senha
                         </FormLabel>
                         <FormControl>
@@ -376,10 +376,10 @@ const Register = () => {
               {step === 2 && (
                 <div className="space-y-5 fade-in">
                   <div className="text-center mb-4">
-                    <h1 className="text-xl font-semibold text-[#ecedef] tracking-tight">
+                    <h1 className="text-xl font-semibold text-foreground tracking-tight">
                       Sua organização
                     </h1>
-                    <p className="text-sm text-[#ecedef]/50 mt-1.5">
+                    <p className="text-sm text-muted-foreground mt-1.5">
                       Configure o espaco de trabalho da sua empresa
                     </p>
                   </div>
@@ -389,7 +389,7 @@ const Register = () => {
                     name="organizationName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5" /> Nome da empresa
                         </FormLabel>
                         <FormControl>
@@ -410,12 +410,12 @@ const Register = () => {
                     name="slug"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[13px] font-medium text-[#ecedef]/70 flex items-center gap-1.5">
+                        <FormLabel className="text-[13px] font-medium text-foreground/80 flex items-center gap-1.5">
                           <Link2 className="h-3.5 w-3.5" /> URL da organização
                         </FormLabel>
                         <FormControl>
                           <div className={cn('flex items-center', inputClass, 'pr-0 overflow-hidden')}>
-                            <span className="pl-3 pr-1 text-[13px] text-[#ecedef]/40 select-none">
+                            <span className="pl-3 pr-1 text-[13px] text-muted-foreground select-none">
                               clickhero.app/
                             </span>
                             <input
@@ -426,7 +426,7 @@ const Register = () => {
                                 field.onChange(e.target.value.toLowerCase());
                               }}
                               placeholder="minha-agencia"
-                              className="flex-1 bg-transparent outline-none text-[#ecedef] text-sm py-2 pr-3 placeholder:text-[#ecedef]/25"
+                              className="flex-1 bg-transparent outline-none text-foreground text-sm py-2 pr-3 placeholder:text-muted-foreground/60"
                             />
                           </div>
                         </FormControl>
@@ -467,10 +467,10 @@ const Register = () => {
               {step === 3 && (
                 <div className="space-y-6 fade-in">
                   <div className="text-center mb-2">
-                    <h1 className="text-xl font-semibold text-[#ecedef] tracking-tight">
+                    <h1 className="text-xl font-semibold text-foreground tracking-tight">
                       Quase la
                     </h1>
-                    <p className="text-sm text-[#ecedef]/50 mt-1.5">
+                    <p className="text-sm text-muted-foreground mt-1.5">
                       Personalize seu avatar e revise os dados
                     </p>
                   </div>
@@ -524,7 +524,7 @@ const Register = () => {
                   />
 
                   {/* Review card */}
-                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2.5">
+                  <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2.5">
                     <ReviewRow icon={<User className="h-3.5 w-3.5" />} label="Nome" value={values.displayName} />
                     <ReviewRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={values.email} />
                     <ReviewRow
@@ -549,7 +549,7 @@ const Register = () => {
                     variant="outline"
                     onClick={back}
                     disabled={isSubmitting}
-                    className="h-11 px-4 rounded-xl bg-white/[0.02] border-white/[0.08] hover:bg-white/[0.06] text-[#ecedef]"
+                    className="h-11 px-4 rounded-xl bg-muted/30 border-border hover:bg-muted text-foreground"
                   >
                     <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar
                   </Button>
@@ -581,7 +581,7 @@ const Register = () => {
           </Form>
         </div>
 
-        <p className="text-[13px] text-[#ecedef]/40 text-center mt-6">
+        <p className="text-[13px] text-muted-foreground text-center mt-6">
           Ja tem conta?{' '}
           <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
             Entrar
@@ -596,12 +596,12 @@ const Register = () => {
 function ReviewRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-[13px]">
-      <span className="flex items-center gap-1.5 text-[#ecedef]/50">
+      <span className="flex items-center gap-1.5 text-muted-foreground">
         {icon}
         {label}
       </span>
-      <span className="text-[#ecedef] font-medium truncate max-w-[60%] text-right">
-        {value || <span className="text-[#ecedef]/30">—</span>}
+      <span className="text-foreground font-medium truncate max-w-[60%] text-right">
+        {value || <span className="text-muted-foreground/60">—</span>}
       </span>
     </div>
   );

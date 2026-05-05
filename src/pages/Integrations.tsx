@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMetaConnect } from '@/hooks/use-meta-connect';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ import {
 import { ScanHealthCard } from '@/components/meta/ScanHealthCard';
 
 const Integrations = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     integration,
     isLoading,
@@ -65,6 +68,32 @@ const Integrations = () => {
       setSearchParams({});
     }
   }, [searchParams, setSearchParams, toast]);
+
+  // Meta OAuth mesmo-navegador (voltou para /integrations?oauth_meta_*)
+  useEffect(() => {
+    const oauthDone = searchParams.get('oauth_meta_done');
+    const oauthErr = searchParams.get('oauth_meta_error');
+    if (oauthDone !== '1' && oauthErr == null) return;
+
+    const next = new URLSearchParams(searchParams);
+    if (oauthDone === '1') {
+      queryClient.invalidateQueries({ queryKey: ['meta-integration'] });
+      queryClient.invalidateQueries({ queryKey: ['meta-assets'] });
+      setTimeout(() => setShowSelector(true), 300);
+      next.delete('oauth_meta_done');
+      next.delete('oauth_accounts');
+    }
+    if (oauthErr != null && oauthErr !== '') {
+      toast({
+        title: 'Erro na conexão Meta',
+        description: decodeURIComponent(oauthErr),
+        variant: 'destructive',
+      });
+      next.delete('oauth_meta_error');
+    }
+    const qs = next.toString();
+    navigate(qs ? `/integrations?${qs}` : '/integrations', { replace: true });
+  }, [searchParams, navigate, queryClient, toast]);
 
   const getStatusBadge = () => {
     if (isConnected) {

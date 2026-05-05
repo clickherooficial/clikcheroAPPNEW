@@ -228,6 +228,38 @@ export function useChat() {
     }
   }, [isStreaming, conversationId]);
 
+  const appendAssistantChatArtifact = useCallback(
+    async (markdown: string): Promise<boolean> => {
+      const text = markdown.trim();
+      if (!text || !conversationId) return false;
+
+      const { data, error } = await supabase.rpc('append_assistant_chat_artifact', {
+        p_conversation_id: conversationId,
+        p_content: text,
+      });
+
+      if (error) {
+        console.warn('[chat] append_assistant_chat_artifact:', error.message);
+        return false;
+      }
+
+      const messageId = typeof data === 'string' && data.length > 0 ? data : crypto.randomUUID();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: messageId,
+          role: 'assistant',
+          content: text,
+          timestamp: new Date(),
+        },
+      ]);
+
+      return true;
+    },
+    [conversationId],
+  );
+
   const stopStreaming = useCallback(() => {
     abortRef.current?.abort();
     setIsStreaming(false);
@@ -257,5 +289,6 @@ export function useChat() {
     newConversation,
     loadConversation,
     loadProactiveInsights,
+    appendAssistantChatArtifact,
   };
 }

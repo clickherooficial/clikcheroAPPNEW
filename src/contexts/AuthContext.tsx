@@ -12,9 +12,11 @@ import type {
   SignInData,
 } from '@/types/auth';
 
+export type SignUpResult = { error: string | null; slugSuggestions?: string[] };
+
 interface AuthContextValue extends AuthState {
   signIn: (data: SignInData) => Promise<{ error: string | null }>;
-  signUp: (data: SignUpData) => Promise<{ error: string | null }>;
+  signUp: (data: SignUpData) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   switchOrganization: (orgId: string) => Promise<{ error: string | null }>;
   refreshAuth: () => Promise<void>;
@@ -292,7 +294,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ name: data.organizationName.trim(), slug }),
       });
 
-      let bodyJson: { error?: string } = {};
+      let bodyJson: {
+        error?: string;
+        suggested_slugs?: string[];
+      } = {};
       try {
         bodyJson = await res.json();
       } catch {
@@ -300,8 +305,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!res.ok) {
-        const detail = bodyJson.error || `HTTP ${res.status}`;
         console.error('[signUp] create-organization failed:', { status: res.status, body: bodyJson });
+        if (res.status === 409 && Array.isArray(bodyJson.suggested_slugs)) {
+          return {
+            error:
+              bodyJson.error?.trim() ||
+              'Este endereço de URL já está em uso. Escolha uma das sugestões ou altere manualmente.',
+            slugSuggestions: bodyJson.suggested_slugs.filter((s) => typeof s === 'string' && s.length > 0),
+          };
+        }
+        const detail = bodyJson.error || `HTTP ${res.status}`;
         return { error: `Falha ao criar organização: ${detail}` };
       }
     } catch (fetchError) {

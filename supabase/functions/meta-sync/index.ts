@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { extractConversasIniciadas, extractCustoConversa } from '../_shared/insights-conversions.ts';
 
 /**
  * Sincroniza campanhas, metricas e criativos da Meta Graph API
@@ -343,15 +344,8 @@ async function syncAccount(
     const insights: MetaInsight[] = insightsData.data ?? [];
 
     for (const ins of insights) {
-      const conversas =
-        ins.actions?.find((a) => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')
-          ?.value ?? ins.actions?.find((a) => a.action_type === 'messaging_conversation_started_7d')?.value;
-
-      const custoConversa = ins.cost_per_action_type?.find(
-        (a) =>
-          a.action_type === 'onsite_conversion.messaging_conversation_started_7d' ||
-          a.action_type === 'messaging_conversation_started_7d'
-      )?.value;
+      const conversasExtracted = extractConversasIniciadas(ins.actions);
+      const custoExtracted = extractCustoConversa(ins.actions, ins.cost_per_action_type);
 
       const roas = ins.website_purchase_roas?.[0]?.value;
 
@@ -384,8 +378,8 @@ async function syncAccount(
         quality_ranking: ins.quality_ranking ?? null,
         engagement_rate_ranking: ins.engagement_rate_ranking ?? null,
         conversion_rate_ranking: ins.conversion_rate_ranking ?? null,
-        conversas_iniciadas: conversas ? Number(conversas) : 0,
-        custo_conversa: custoConversa ? Number(custoConversa) : 0,
+        conversas_iniciadas: conversasExtracted,
+        custo_conversa: custoExtracted ?? 0,
         website_purchase_roas: roas ? Number(roas) : 0,
         company_id: companyId,
         source: 'meta_api',

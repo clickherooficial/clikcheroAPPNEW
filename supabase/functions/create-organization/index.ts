@@ -1,7 +1,71 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 const MAX_NAME_LENGTH = 100;
+const MIN_SLUG_LEN = 3;
+const MAX_SLUG_LEN = 50;
+const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+
+function isValidSlug(s: string): boolean {
+  return s.length >= MIN_SLUG_LEN && s.length <= MAX_SLUG_LEN && SLUG_RE.test(s);
+}
+
+/** Build a slug from base + suffix (suffix starts with "-", e.g. "-2") within length and regex rules. */
+function slugWithSuffix(base: string, suffix: string): string | null {
+  const maxPref = MAX_SLUG_LEN - suffix.length;
+  if (maxPref < 1) return null;
+
+  for (let len = Math.min(base.length, maxPref); len >= 1; len--) {
+    const raw = base.slice(0, len);
+    const pref = raw.replace(/-+$/g, '') || 'org';
+    if (!/^[a-z0-9]/.test(pref)) continue;
+    const candidate = pref + suffix;
+    if (isValidSlug(candidate)) return candidate;
+  }
+  return null;
+}
+
+function randomSlugChunk(len: number): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const buf = new Uint8Array(len);
+  crypto.getRandomValues(buf);
+  let out = '';
+  for (let i = 0; i < len; i++) out += chars[buf[i]! % chars.length];
+  return out;
+}
+
+async function slugIsTaken(db: SupabaseClient, slug: string): Promise<boolean> {
+  const [orgRes, compRes] = await Promise.all([
+    db.from('organizations').select('id', { count: 'exact', head: true }).eq('slug', slug),
+    db.from('companies').select('id', { count: 'exact', head: true }).eq('slug', slug),
+  ]);
+  const oc = orgRes.count ?? 0;
+  const cc = compRes.count ?? 0;
+  return oc > 0 || cc > 0;
+}
+
+/** Returns up to maxResults slugs that are not taken (organizations + companies). */
+async function buildSuggestedSlugs(
+  db: SupabaseClient,
+  requestedSlug: string,
+  maxResults = 5,
+): Promise<string[]> {
+  const out: string[] = [];
+  for (let n = 2; n <= 99 && out.length < maxResults; n++) {
+    const cand = slugWithSuffix(requestedSlug, `-${n}`);
+    if (!cand) continue;
+    if (!(await slugIsTaken(db, cand))) out.push(cand);
+  }
+  let guard = 0;
+  while (out.length < maxResults && guard < 25) {
+    guard++;
+    const cand =
+      slugWithSuffix(requestedSlug, `-${randomSlugChunk(4)}`) ?? `org-${randomSlugChunk(6)}`;
+    if (!isValidSlug(cand) || out.includes(cand)) continue;
+    if (!(await slugIsTaken(db, cand))) out.push(cand);
+  }
+  return out.slice(0, maxResults);
+}
 
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
@@ -103,9 +167,14 @@ Deno.serve(async (req) => {
     if (orgError) {
       // Handle UNIQUE constraint violation (slug taken)
       if (orgError.code === '23505') {
+        const suggested_slugs = await buildSuggestedSlugs(supabaseAdmin, slug);
         return new Response(
-          JSON.stringify({ error: 'This slug is already taken' }),
-          { status: 409, headers: { ...cors, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            error: 'Este endereço de URL já está em uso.',
+            code: 'SLUG_TAKEN',
+            suggested_slugs,
+          }),
+          { status: 409, headers: { ...cors, 'Content-Type': 'application/json' } },
         );
       }
       console.error('Failed to create organization:', orgError);
@@ -132,6 +201,17 @@ Deno.serve(async (req) => {
       const { error: rollbackError } = await supabaseAdmin.from('organizations').delete().eq('id', org.id);
       if (rollbackError) console.error('CRITICAL: Rollback failed, orphaned org:', org.id, rollbackError);
       console.error('Failed to create company:', companyError);
+      if (companyError.code === '23505') {
+        const suggested_slugs = await buildSuggestedSlugs(supabaseAdmin, slug);
+        return new Response(
+          JSON.stringify({
+            error: 'Este endereço de URL já está em uso.',
+            code: 'SLUG_TAKEN',
+            suggested_slugs,
+          }),
+          { status: 409, headers: { ...cors, 'Content-Type': 'application/json' } },
+        );
+      }
       return new Response(
         JSON.stringify({ error: 'Failed to create company' }),
         { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }

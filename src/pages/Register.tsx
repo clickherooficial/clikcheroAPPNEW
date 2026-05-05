@@ -100,6 +100,8 @@ const Register = () => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
+  /** Slugs disponíveis após erro 409 do create-organization */
+  const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -141,7 +143,7 @@ const Register = () => {
   const onSubmit = async (v: SignupFormValues) => {
     setIsSubmitting(true);
     try {
-      const { error } = await signUp({
+      const { error, slugSuggestions: slugSuggestFromApi } = await signUp({
         email: v.email,
         password: v.password,
         displayName: v.displayName,
@@ -150,9 +152,21 @@ const Register = () => {
         avatarSeed: v.avatarSeed,
       });
       if (error) {
-        toast({ title: 'Erro ao criar conta', description: error, variant: 'destructive' });
+        if (slugSuggestFromApi && slugSuggestFromApi.length > 0) {
+          setSlugSuggestions(slugSuggestFromApi);
+          setStep(2);
+          toast({
+            title: 'URL já em uso',
+            description:
+              'Escolha uma das sugestões abaixo ou altere manualmente o endereço da organização.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({ title: 'Erro ao criar conta', description: error, variant: 'destructive' });
+        }
         return;
       }
+      setSlugSuggestions([]);
       toast({
         title: 'Conta criada com sucesso!',
         description: 'Verifique seu email para confirmar o cadastro.',
@@ -407,6 +421,7 @@ const Register = () => {
                             <input
                               {...field}
                               onChange={(e) => {
+                                setSlugSuggestions([]);
                                 setSlugTouched(true);
                                 field.onChange(e.target.value.toLowerCase());
                               }}
@@ -416,6 +431,31 @@ const Register = () => {
                           </div>
                         </FormControl>
                         <FormMessage />
+                        {slugSuggestions.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 space-y-2">
+                            <p className="text-[12px] text-amber-200/95 leading-snug">
+                              Este endereço já está em uso. Toque para usar uma sugestão disponível:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {slugSuggestions.map((s) => (
+                                <Button
+                                  key={s}
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8 rounded-lg text-xs font-medium"
+                                  onClick={() => {
+                                    form.setValue('slug', s, { shouldValidate: true });
+                                    setSlugTouched(true);
+                                    setSlugSuggestions([]);
+                                  }}
+                                >
+                                  {s}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </FormItem>
                     )}
                   />

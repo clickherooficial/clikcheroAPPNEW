@@ -96,6 +96,8 @@ export interface CampaignProposalPayload {
   stop_time?: string;             // ISO 8601
   audience: AudiencePayload;
   optimization_goal: MetaOptimizationGoal;
+  /** Rotulo quando targeting resolve cidade/regiao (só UX; opcional em JSON legacy) */
+  audience_geo_summary?: string;
   // Ad level
   copy: CopyPayload;
   link_url: string;

@@ -6,19 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import { useBriefingCompleteness } from '@/hooks/use-briefing-completeness';
-import type { BriefingMissingField } from '@/types/briefing';
-
-const FIELD_LABELS: Record<BriefingMissingField, string> = {
-  niche: 'nicho do negocio',
-  short_description: 'descrição da empresa',
-  primary_offer: 'oferta principal',
-  audience_age: 'faixa etaria do público',
-  audience_location: 'localização do público',
-  tone_formality: 'formalidade do tom de voz',
-  tone_technicality: 'tecnicidade do tom de voz',
-  tone_emotional: 'tom emocional dominante',
-  visual_identity: 'logo ou paleta de cores',
-};
+import { BRIEFING_MISSING_FIELD_LABELS } from '@/types/briefing';
 
 export function BriefingCompletenessBanner() {
   const navigate = useNavigate();
@@ -44,7 +32,7 @@ export function BriefingCompletenessBanner() {
 
   const missingLabels = missingFields
     .slice(0, 3)
-    .map((f) => FIELD_LABELS[f] ?? f)
+    .map((f) => BRIEFING_MISSING_FIELD_LABELS[f] ?? f)
     .join(', ');
   const moreCount = Math.max(0, missingFields.length - 3);
 

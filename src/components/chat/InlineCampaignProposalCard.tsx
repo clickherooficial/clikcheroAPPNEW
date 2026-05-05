@@ -32,7 +32,7 @@ import { useCampaignProposal } from '@/hooks/use-campaign-proposal';
 import { useCampaignPublication } from '@/hooks/use-campaign-publisher';
 import { CampaignProposalEditor } from './CampaignProposalEditor';
 import { navigateToView } from '@/lib/view-navigation';
-import type { ComplianceSeverity, CampaignObjective } from '@/types/campaign-proposal';
+import type { ComplianceSeverity, CampaignObjective, CampaignProposalPayload } from '@/types/campaign-proposal';
 
 interface Props {
   proposalId: string;
@@ -62,6 +62,15 @@ function severityBadge(sev: ComplianceSeverity) {
     default:
       return { Icon: HelpCircle, label: 'Não verificado', className: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' };
   }
+}
+
+function audienceStatValue(p: CampaignProposalPayload): string {
+  const ages = `${p.audience.age_min}–${p.audience.age_max} anos`;
+  const geo = p.audience_geo_summary?.trim();
+  if (geo) return `${ages}, ${geo}`;
+  const hasCities = (p.audience.geo_locations.cities ?? []).length > 0;
+  if (hasCities) return `${ages}, área local`;
+  return `${ages}, BR`;
 }
 
 export function InlineCampaignProposalCard({ proposalId, onSendSystemMessage }: Props) {
@@ -162,7 +171,7 @@ export function InlineCampaignProposalCard({ proposalId, onSendSystemMessage }: 
               <div className="grid grid-cols-3 gap-2 mt-3 text-[11px]">
                 <Stat label="Objetivo" value={OBJECTIVE_LABEL_LEIGO[p.objective]} />
                 <Stat label="Por dia" value={`R$ ${p.daily_budget_brl.toFixed(2).replace('.', ',')}`} />
-                <Stat label="Público" value={`${p.audience.age_min}–${p.audience.age_max} anos, BR`} />
+                <Stat label="Público" value={audienceStatValue(p)} />
               </div>
 
               {sev === 'medium' && (compliance.hits ?? []).length > 0 && (

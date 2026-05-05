@@ -119,6 +119,19 @@ export type BriefingMissingField =
   | 'tone_emotional'
   | 'visual_identity';
 
+/** Rótulos para UI (banner, página Briefing): `v_company_briefing_status.missing_fields`. */
+export const BRIEFING_MISSING_FIELD_LABELS: Record<BriefingMissingField, string> = {
+  niche: 'nicho do negócio',
+  short_description: 'descrição da empresa',
+  primary_offer: 'oferta principal',
+  audience_age: 'faixa etária do público',
+  audience_location: 'localização do público',
+  tone_formality: 'formalidade do tom de voz',
+  tone_technicality: 'tecnicidade do tom de voz',
+  tone_emotional: 'tom emocional dominante',
+  visual_identity: 'logo ou paleta de cores',
+};
+
 export interface BriefingStatusRow {
   company_id: string;
   is_complete: boolean;

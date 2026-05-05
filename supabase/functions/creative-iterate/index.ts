@@ -4,7 +4,7 @@
 // Modes:
 //   - 'iterate'    -> reusa parent.prompt + diff em instruction (default)
 //   - 'regenerate' -> reusa parent.prompt sem instruction
-//   - 'vary'       -> forca count=3, mesmo prompt (variacao natural)
+//   - 'vary'       -> 3 imagens com CONCEITOS distintos (prompts por angulo; item 9)
 //
 // Pipeline:
 //   1. Tenant guard
@@ -76,6 +76,40 @@ interface IterateResponse {
   blocked_by_dedupe: number;
   warnings: string[];
   iteration_warning?: string;
+}
+
+/** Angulos em PT-BR: cada variacao pede conceito/mensagem bem diferente (item 9). */
+const VARY_CONCEPT_ANGLES_PT: readonly string[] = [
+  'Perspectiva A: destaque FORTE problema/dor/transformacao antes-de-depois; composicao e copy novos.',
+  'Perspectiva B: beneficio emocional + prova social (depoimento ficticio estilizado OU selo garantia); layout e cores distintos.',
+  'Perspectiva C: novo enquadramento de cena (novo fundo, novo angulo de camera, hierarquia tipografica outra); mesmo produto/servico.',
+];
+
+function truncateForConcept(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
+function buildTaskPrompt(
+  mode: z.infer<typeof IterateModeEnum>,
+  parent: { prompt: string; concept: string },
+  taskIndex: number,
+  taskTotal: number,
+  instruction: string | undefined,
+): string {
+  if (mode === 'regenerate') {
+    return parent.prompt;
+  }
+  if (mode === 'vary') {
+    const angle = VARY_CONCEPT_ANGLES_PT[taskIndex % VARY_CONCEPT_ANGLES_PT.length];
+    const base = parent.prompt.trim();
+    const conceptHint = parent.concept?.trim()
+      ? `\nNegocio/oferta (manter o mesmo produto/servico, nao mudar marca): ${parent.concept.trim()}`
+      : '';
+    return `${base}${conceptHint}\n\n---\nVARIACAO ${taskIndex + 1}/${taskTotal} — CONCEITO E IMAGEM BEM DIFERENTES (obrigatorio)\nAngulo criativo: ${angle}\nRegras: nova composicao visual, nova hierarquia, nova mensagem principal. PROIBIDO resultado quase-identico ao criativo de referencia (nao basta filtro, brilho ou pequeno crop). Trate como briefing de anuncio novo reutilizando apenas a mesma oferta/marca.\nUse a imagem de referencia como guia de marca/produto, mas pode REENQUADRAR tudo diferente.`;
+  }
+  return `${parent.prompt}\n\nMudanca solicitada: ${instruction ?? ''}`;
 }
 
 Deno.serve(async (req) => {
@@ -200,10 +234,12 @@ Deno.serve(async (req) => {
   }
   const parentBytes = new Uint8Array(await parentBlob.arrayBuffer());
 
-  // Build prompt segundo mode
-  const promptText = mode === 'regenerate' || mode === 'vary'
-    ? parent.prompt
-    : `${parent.prompt}\n\nMudanca solicitada: ${reqBody.instruction ?? ''}`;
+  // Build prompts por task (vary = angulos diferentes; iterate/regenerate = iguais)
+  const promptsPerTask: string[] = [];
+  for (let i = 0; i < concreteCount; i++) {
+    promptsPerTask.push(buildTaskPrompt(mode, parent, i, concreteCount, reqBody.instruction));
+  }
+
   const negativePrompt = [
     ...prohibitions.words, ...prohibitions.topics, ...prohibitions.visualRules,
     ...complianceText.baseline_hits.map((h) => h.term),
@@ -225,7 +261,7 @@ Deno.serve(async (req) => {
       callProviderWithFallback(
         {
           model: resolvedModel,
-          prompt: promptText,
+          prompt: promptsPerTask[i],
           format: parent.format,
           parentBytes,
           negativePrompt,
@@ -254,7 +290,13 @@ Deno.serve(async (req) => {
   let failedCount = 0;
   let blockedByDedupe = 0;
 
-  for (const r of settled) {
+  for (let idx = 0; idx < settled.length; idx++) {
+    const r = settled[idx];
+    const promptUsed = promptsPerTask[idx] ?? parent.prompt;
+    const baseConceptLabel = truncateForConcept(((parent.concept ?? '').trim() || 'Oferta cliente'), 140);
+    const rowConcept = mode === 'vary'
+      ? `${baseConceptLabel} · variacao-${idx + 1} conceito-distinto`
+      : parent.concept;
     if (r.status === 'rejected' || !r.value.ok) {
       failedCount++;
       const errKind = r.status === 'rejected'
@@ -327,8 +369,8 @@ Deno.serve(async (req) => {
         conversation_id: parent.conversation_id,
         parent_creative_id: parent.id,
         near_duplicate_of_id: isNearDup ? nearDupId : null,
-        prompt: promptText,
-        concept: parent.concept,
+        prompt: promptUsed,
+        concept: rowConcept,
         format: parent.format,
         model_used: ok.modelUsed,
         provider_model_version: ok.modelUsed,

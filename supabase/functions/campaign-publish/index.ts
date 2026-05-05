@@ -35,6 +35,11 @@ const AdsetSchema = z.object({
   targeting: z.object({
     geo_locations: z.object({
       countries: z.array(z.string().length(2)).optional(),
+      cities: z.array(z.object({
+        key: z.string().min(1),
+        radius: z.number().optional(),
+        distance_unit: z.enum(['kilometer', 'mile']).optional(),
+      })).optional(),
     }).default({ countries: ['BR'] }),
     age_min: z.number().int().min(13).max(65).default(18),
     age_max: z.number().int().min(13).max(65).default(65),

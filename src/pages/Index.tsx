@@ -110,7 +110,6 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <AdAccountSwitcher />
             <ThemeToggle />
-            <div className="h-8 w-8 rounded-full bg-zinc-800 border border-white/10" />
           </div>
         </header>
 

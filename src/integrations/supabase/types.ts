@@ -6807,6 +6807,10 @@ export type Database = {
       }
     }
     Functions: {
+      append_assistant_chat_artifact: {
+        Args: { p_content: string; p_conversation_id: string }
+        Returns: string
+      }
       backfill_adsets_campaign_id: {
         Args: { p_company_id: string }
         Returns: number

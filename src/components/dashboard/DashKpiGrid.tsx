@@ -117,7 +117,7 @@ export function DashKpiGrid({ currentMetrics, previousMetrics, loading }: Props)
       spark: sparks.cliques,
     },
     {
-      label: 'Conversas Iniciadas',
+      label: 'Conversões (leads · msgs)',
       value: cur.conversas.toLocaleString('pt-BR'),
       deltaPct: delta(cur.conversas, prev.conversas),
       higherIsBetter: true,

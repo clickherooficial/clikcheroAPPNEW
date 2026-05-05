@@ -14,8 +14,16 @@ import { StepTone } from './steps/StepTone';
 import { StepVisuals } from './steps/StepVisuals';
 import { StepProhibitions } from './steps/StepProhibitions';
 import { Progress } from '@/components/ui/progress';
-import { BriefingHistory } from './BriefingHistory';
 import { ArchetypeSelector } from './ArchetypeSelector';
+import { BRIEFING_MISSING_FIELD_LABELS, type BriefingMissingField } from '@/types/briefing';
+
+function formatMissingRequiredSummary(count: number, fields: BriefingMissingField[]): string {
+  if (fields.length === 0) return '';
+  const labels = fields.map((f) => BRIEFING_MISSING_FIELD_LABELS[f] ?? f);
+  const listed = labels.join(', ');
+  const suffix = count === 1 ? 'Falta 1 campo obrigatório' : `Faltam ${count} campos obrigatórios`;
+  return `${suffix}: ${listed}`;
+}
 
 export function BriefingView() {
   const { briefing, isLoading, isReadOnly, saveStep } = useBriefing();
@@ -49,7 +57,7 @@ export function BriefingView() {
         <CardHeader>
           <CardTitle>Briefing da empresa</CardTitle>
           <CardDescription>
-            Edite a qualquer momento — todas as alteracoes ficam versionadas.
+            Edite a qualquer momento; use Salvar em cada seção para atualizar o briefing.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -61,7 +69,21 @@ export function BriefingView() {
           {!completeness.isComplete && (
             <Alert className="mt-3">
               <AlertDescription>
-                Briefing ainda incompleto. Faltam: {completeness.missingFields.length} campo(s) obrigatorio(s).
+                {completeness.missingFields.length > 0 ? (
+                  <>
+                    Briefing ainda incompleto.{' '}
+                    {formatMissingRequiredSummary(
+                      completeness.missingFields.length,
+                      completeness.missingFields,
+                    )}
+                    .
+                  </>
+                ) : (
+                  <>
+                    Briefing ainda incompleto. Alguns dados obrigatórios não foram marcados como
+                    concluídos — abra cada seção abaixo e salve onde faltar informação.
+                  </>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -149,8 +171,6 @@ export function BriefingView() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-
-      <BriefingHistory />
     </div>
   );
 }

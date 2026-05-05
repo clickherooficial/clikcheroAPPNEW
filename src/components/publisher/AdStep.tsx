@@ -69,7 +69,7 @@ export function AdStep({ data, onChange }: Props) {
 
       <div className="space-y-1.5">
         <Label>Nome Interno do Anúncio *</Label>
-        <Input value={data.name} onChange={(e) => set('name', e.target.value)} maxLength={400} placeholder="Ex: Ad-001 - Imagem Black Friday" />
+        <Input value={data.name} onChange={(e) => set('name', e.target.value)} maxLength={400} placeholder="Ex: Convite-lancamento-colecao-marco" />
       </div>
 
       <div className="space-y-1.5">

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { META_OAUTH_RETURN_STORAGE_KEY } from '@/lib/oauth-meta-return';
 
 interface MetaIntegration {
   id: string;
@@ -29,7 +30,7 @@ export function useMetaConnect() {
   // Fetch current Meta integration status
   const {
     data: integration,
-    isLoading,
+    isPending: integrationBootstrap,
     error,
   } = useQuery<MetaIntegration | null>({
     queryKey: ['meta-integration'],
@@ -48,6 +49,9 @@ export function useMetaConnect() {
     staleTime: 30_000,
   });
 
+  /** Só primeira carga: refetch pós-OAuth não dispara spinner em tela cheia dentro do wizard. */
+  const isLoading = integrationBootstrap;
+
   // Start OAuth flow
   const connectMutation = useMutation({
     mutationFn: async () => {
@@ -62,6 +66,14 @@ export function useMetaConnect() {
       return data as { url: string; state: string };
     },
     onSuccess: (data) => {
+      try {
+        sessionStorage.setItem(
+          META_OAUTH_RETURN_STORAGE_KEY,
+          `${window.location.pathname}${window.location.search}`,
+        );
+      } catch {
+        /* ignore */
+      }
       // Popup flow — abre Meta em popup, callback redireciona pra /oauth/meta/complete
       // (rota do proprio app — nao tem cross-origin, nao mostra HTML cru)
       // Essa rota faz postMessage pro opener e fecha o popup

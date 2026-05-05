@@ -12,6 +12,15 @@ export type QuickstartCard = {
   icon?: string;       // nome lucide opcional
 };
 
+/** Card fixo (primeiro): produto sempre oferecer caminho pra criar campanha — backlog item 6. */
+export const CREATE_AD_CAMPAIGN_QUICKSTART: QuickstartCard = {
+  id: 'create-ad-campaign',
+  title: 'Criar campanha de anúncio',
+  prompt:
+    'Quero criar uma campanha de anúncio no Meta com base no meu briefing. Propõe objetivo, público, orçamento e criativos, e me guia até publicar quando eu aprovar.',
+  icon: 'Megaphone',
+};
+
 export const QUICKSTART_BY_ARCHETYPE: Record<Archetype | 'fallback', QuickstartCard[]> = {
   small_local_business: [
     {
@@ -146,9 +155,12 @@ export const QUICKSTART_BY_ARCHETYPE: Record<Archetype | 'fallback', QuickstartC
 };
 
 /**
- * Retorna os 4 cards de quickstart correspondentes ao arquetipo do negocio.
- * Se archetype for null (nao detectado / "Nao sei / Misto"), retorna fallback generico.
+ * Primeiro card: sempre criar campanha de anúncio (`CREATE_AD_CAMPAIGN_QUICKSTART`).
+ * Demais: ate 4 cards do arquetipo (fallback omite duplicado `fallback-primeira-campanha`).
  */
 export function getQuickstartCards(archetype: Archetype | null): QuickstartCard[] {
-  return QUICKSTART_BY_ARCHETYPE[archetype ?? 'fallback'] ?? QUICKSTART_BY_ARCHETYPE.fallback;
+  const key = archetype ?? 'fallback';
+  const list = QUICKSTART_BY_ARCHETYPE[key] ?? QUICKSTART_BY_ARCHETYPE.fallback;
+  const archetypeExtras = list.filter((c) => c.id !== 'fallback-primeira-campanha');
+  return [CREATE_AD_CAMPAIGN_QUICKSTART, ...archetypeExtras];
 }

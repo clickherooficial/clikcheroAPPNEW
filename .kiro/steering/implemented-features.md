@@ -1,7 +1,98 @@
 # Implemented Features (Steering — As-Built State)
 
-> Atualizado: 2026-05-03
+> Atualizado: 2026-05-06
 > Este documento reflete o estado REAL do projeto. Sempre que uma feature for completada, atualize aqui.
+
+---
+
+## Chat — item 11: público local (Targeting Search Meta) na proposta (2026-05-05)
+
+- **`supabase/functions/_shared/meta-geo-resolve.ts`:** Targeting Search `type=adgeolocation` → `searchMetaAdGeoCity`, `enrichAudienceWithLocalGeo` (prioridade `local_geo_hint` na tool; briefing cidade + arquetipo `small_local_business`).
+- **`propose-campaign-handler.ts`:** campo Zod opcional `local_geo_hint`; enriquecer `defaults.audience` após `resolveDefaults`; opcional `audience_geo_summary` no `payload_jsonb`; resumo no markdown mais legível (~raio km).
+- **`campaign-proposal-helpers.ts`:** merge geo em overrides (countries default BR ao passar só `cities`); tipo `CampaignProposalPayload.audience_geo_summary`; correção refs TypeScript em `CampaignPublishBody`.
+- **`campaign-publish/index.ts`:** Zod em `geo_locations.cities[]` ({ key, radius, distance_unit }) para criar AdSet com pinning local.
+- **`_shared/tools.ts` / `_shared/prompt.ts`:** orientar LLM a usar `local_geo_hint` e uma pergunta de cidade para negócio local.
+- **Frontend:** `src/types/campaign-proposal.ts` (`audience_geo_summary`); `InlineCampaignProposalCard` exibe público com cidade/resumo.
+- **Deploy Edge (produção `ckxewdahdiambbxmqxgb`):** `ai-chat` + `campaign-publish` aplicados nesta sprint; prerequisite: corrigidas crases não escapadas em `_shared/prompt.ts` que quebravam o bundle Deno ao publicar.
+
+---
+
+## Briefing — alerta incompleto lista campos obrigatórios (2026-05-04)
+
+> UX rápido (sem spec separada).
+
+- **`src/types/briefing.ts`:** `BRIEFING_MISSING_FIELD_LABELS` — rótulos em PT-BR por `BriefingMissingField`.
+- **`src/components/briefing/BriefingCompletenessBanner.tsx`:** consome esse map em vez de duplicar strings.
+- **`src/components/briefing/BriefingView.tsx`:** mensagem tipo “Falta(n) campo(s) obrigatório(s): …” com os nomes; fallback se incompleto sem `missingFields`.
+- **`src/components/briefing/BriefingWizard.tsx`:** passo 4 (tom) — toast com mensagem de validação mais clara (ex.: problema Zod).
+
+---
+
+## Briefing — removido histórico na UI (2026-05-04)
+
+> Produto/backlog item 5: não exibir mais “Histórico de alterações” na página de edição.
+
+- **`BriefingView.tsx`:** card sem copy de versionamento público; removido embed do histórico.
+- **Removido:** `src/components/briefing/BriefingHistory.tsx` (tabela `briefing_history` e trigger no DB permanecem para auditoria futura, se necessário).
+
+---
+
+## Chat — card fixo "Criar campanha de anúncio" no welcome (2026-05-04)
+
+> Backlog item 6: sempre oferecer sugestão explícita de criar campanha nos cards iniciais.
+
+- **`src/lib/quickstart-cards.ts`:** constante `CREATE_AD_CAMPAIGN_QUICKSTART` como primeiro elemento; `getQuickstartCards` concatena esse card aos demais por arquetipo e remove duplicata `fallback-primeira-campanha` quando o usuário está no fallback.
+
+---
+
+## Chat — galeria inline atualiza após Iterar / Variar 3x (2026-05-04)
+
+> Backlog item 7: ao pedir alteração pelo card, mostrar as novas imagens (antes a lista vinha só do assistant message IDs).
+
+- **`CreativeGalleryInline.tsx`:** estado local `prependedFromActions` + `hiddenIds` — sucesso da mutation `iterate`/`vary` injeta criativos retornados pela Edge (URLs assinadas do response) na grade e oculta o pai; ao trocar a mensagem (fingerprint dos ids vindos da tag `<creative-gallery>`), o estado auxiliar reinicia.
+
+---
+
+## UI — remover “bola” decorativa ao lado do tema (2026-05-05)
+
+> Backlog item 10.
+
+- **`src/pages/Index.tsx`:** removido `div` circular vazio ao lado do `ThemeToggle` no header (painel superior).
+
+---
+
+## Chat — item 9: variações no histórico + conceitos distintos (2026-05-05)
+
+- **`creative-iterate` (`vary`):** por imagem, prompt com ângulo criativo diferente (3 vias PT-BR); `concept` gravado com sufixo `variacao-N conceito-distinto`. Comentário no header do arquivo atualizado.
+- **`_shared/tools.ts` / `creative-specialist`:** descrição da tool `vary_creative` alinha “conceito bem diferente”, não só tweak.
+- **`append_assistant_chat_artifact` RPC** + migration `20260505002000_append_assistant_chat_artifact.sql`: assistant message com `metadata.source=creative_ui_action`, valida dono da conversa.
+- **`use-chat`:** `appendAssistantChatArtifact` → RPC + append otimista na lista.
+- **`ChatView` / `ChatCreativeGallery` / `CreativeGalleryInline`:** após **Variar 3x** ou **Iterar** (UI), tenta gravar bolha assistant com `<creative-gallery ids="…"/>` no fio; se RPC falhar ou não houver conversa, fallback no prepend local (como antes).
+- **Deploy:** `creative-iterate`, `ai-chat`, `creative-specialist` + migration aplicada no projeto `ckxewdahdiambbxmqxgb`.
+
+---
+
+## Chat — menos viés espontâneo "Black Friday" (2026-05-04)
+
+> Backlog item 8: modelo não ficar sugindo BF como exemplo padrão.
+
+- **`supabase/functions/_shared/prompt.ts`:** secção guiando anti-sugestão espontânea de BF/Natal/Cyber Monday; poucos-shots antes com BF trocados por exemplos SMB genéricos.
+- **`supabase/functions/_shared/tools.ts`:** descrições de parâmetros (search_knowledge, delegate_*, generate_creative) sem BF como exemplo repetido.
+- **`supabase/functions/creative-specialist/index.ts`:** regra pra não usar BF como exemplo se o usuário não pediu.
+- **`CampaignStep.tsx` / `AdStep.tsx`:** placeholders neutros nos nomes de campanha/anúncio.
+- Redeploy: `ai-chat` + `creative-specialist` com esses arquivos compartilhados.
+
+---
+
+## Painel Meta — conversões incluem leads site/LP (2026-05-04)
+
+- **Problema:** `meta-sync` só lia `messaging_conversation_started_*` em `insights.actions`; campanhas OUTCOME_LEADS com destino website/Landing Page reportam outros `action_type` (ex.: `lead`, `offsite_conversion.fb_pixel_lead`) e ficavam com zero em `campaign_metrics`.
+- **`supabase/functions/_shared/insights-conversions.ts`:** helpers `extractConversasIniciadas` / `extractCustoConversa` — agrupa mensagens + família de leads; custo CPL/CPA pelo `cost_per_action_type` alinhado à família com maior volume.
+- **`supabase/functions/meta-sync/index.ts`:** usa esses helpers ao inserir `conversas_iniciadas` e `custo_conversa`.
+- **UI:** KPI em `DashKpiGrid.tsx` renomeado para **Conversões (leads · msgs)**.
+- **Pendente operacional:** fazer deploy da Edge Function `meta-sync` no projeto Supabase após merge.
+
+---
 
 ## agency-mode — Sprint 8/8 (2026-05-03) — ROADMAP COMPLETE
 

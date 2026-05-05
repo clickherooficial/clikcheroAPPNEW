@@ -1,7 +1,7 @@
 // Galeria inline de criativos retornados pela tool no chat.
 // Spec: ai-creative-generation (task 9.1 — R5.1, R5.2, R5.3, R5.4, R5.5)
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Check, Sparkles, Copy, Trash2, AlertTriangle, CheckCircle2, XCircle, RotateCcw, ArrowRight, Rocket } from 'lucide-react';
 import { navigateToView } from '@/lib/view-navigation';
 import { ToastAction } from '@/components/ui/toast';
@@ -15,6 +15,7 @@ import {
   ASPECT_LABELS,
   PROVIDER_LABELS,
   type Creative,
+  type CreativeMetadata,
 } from '@/types/creative';
 import { CreativeDetailDialog } from './CreativeDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,9 +36,27 @@ type LocalStatus = 'generated' | 'approved' | 'discarded';
 interface CreativeGalleryInlineProps {
   creatives: InlineCreative[];
   onSendSystemMessage?: (text: string) => void;
+  appendAssistantMarkdown?: (markdown: string) => Promise<boolean>;
 }
 
-export function CreativeGalleryInline({ creatives, onSendSystemMessage }: CreativeGalleryInlineProps) {
+function metaToInline(m: CreativeMetadata): InlineCreative {
+  return {
+    id: m.id,
+    signed_url: m.signed_url,
+    format: m.format,
+    model_used: m.model_used,
+    cost_usd: m.cost_usd,
+    is_near_duplicate: m.is_near_duplicate,
+    compliance_warning: m.compliance_warning,
+    status: 'generated',
+  };
+}
+
+export function CreativeGalleryInline({
+  creatives,
+  onSendSystemMessage,
+  appendAssistantMarkdown,
+}: CreativeGalleryInlineProps) {
   const { isReadOnly, approve, discard, iterate, vary } = useCreatives();
   const applyPipeline = useApplyCreativePipeline();
   const { toast } = useToast();
@@ -47,8 +66,35 @@ export function CreativeGalleryInline({ creatives, onSendSystemMessage }: Creati
   const [detailCreative, setDetailCreative] = useState<Creative | null>(null);
   // Status local que sobrepoe o do servidor — atualiza imediatamente apos action
   const [localStatus, setLocalStatus] = useState<Record<string, LocalStatus>>({});
+  /** Resultados de iterate/vary pela UI ficam só no edge response — lista base do chat não atualiza */
+  const [prependedFromActions, setPrependedFromActions] = useState<InlineCreative[]>([]);
+  /** Pai some da grade após branching (novas imgs aparecem no lugar lógico) */
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
 
-  if (!creatives || creatives.length === 0) return null;
+  const propsFingerprint = creatives.map((c) => c.id).join('|');
+  useEffect(() => {
+    setPrependedFromActions([]);
+    setHiddenIds(new Set());
+  }, [propsFingerprint]);
+
+  const mergedCreatives = useMemo(() => {
+    const seen = new Set<string>();
+    const out: InlineCreative[] = [];
+    for (const c of prependedFromActions) {
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      out.push(c);
+    }
+    for (const c of creatives) {
+      if (hiddenIds.has(c.id)) continue;
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      out.push(c);
+    }
+    return out;
+  }, [prependedFromActions, creatives, hiddenIds]);
+
+  if (mergedCreatives.length === 0) return null;
 
   const getStatus = (c: InlineCreative): LocalStatus => {
     if (localStatus[c.id]) return localStatus[c.id];
@@ -108,9 +154,46 @@ export function CreativeGalleryInline({ creatives, onSendSystemMessage }: Creati
     setBusyId(id);
     const r = await vary(id);
     setBusyId(null);
-    toast(r.ok
-      ? { title: 'Variações geradas', description: `${r.value.creatives.length} novas.` }
-      : { title: 'Erro', description: r.error.kind, variant: 'destructive' });
+    if (!r.ok) {
+      toast({ title: 'Erro', description: r.error.kind, variant: 'destructive' });
+      return;
+    }
+
+    const created = r.value.creatives;
+    if (created.length === 0) {
+      toast({ title: 'Sem imagens novas', description: 'Nada foi gerado desta vez.' });
+      return;
+    }
+
+    const idsCsv = created.map((c) => c.id).join(',');
+    const markdown =
+      `**Três variações — conceitos e composição bem diferentes.**\n\n<creative-gallery ids="${idsCsv}"/>`;
+
+    let appended = false;
+    if (appendAssistantMarkdown) {
+      try {
+        appended = await appendAssistantMarkdown(markdown);
+      } catch {
+        appended = false;
+      }
+    }
+
+    if (!appended) {
+      const injected = created.map(metaToInline);
+      setHiddenIds((prev) => new Set(prev).add(id));
+      setPrependedFromActions((prev) => [...injected, ...prev]);
+      toast({
+        title: 'Variações geradas',
+        description: appendAssistantMarkdown
+          ? `${created.length} novas na galeria (não foi possível registrar na conversa).`
+          : `${created.length} novas na galeria. Precisa estar no chat para ir ao histórico.`,
+      });
+    } else {
+      toast({
+        title: 'Variações no chat',
+        description: `${created.length} criativos com conceitos bem diferentes.`,
+      });
+    }
   };
 
   const handleReopen = (id: string) => {
@@ -144,19 +227,49 @@ export function CreativeGalleryInline({ creatives, onSendSystemMessage }: Creati
       mode: 'iterate',
     });
     setBusyId(null);
-    if (r.ok) {
-      toast({ title: 'Iterado', description: `${r.value.creatives.length} novo(s) criativo(s).` });
-      setIteratingId(null);
-      setIterateInstruction('');
-    } else {
+    if (!r.ok) {
       toast({ title: 'Erro', description: r.error.kind, variant: 'destructive' });
+      return;
     }
+
+    const created = r.value.creatives;
+    if (created.length === 0) {
+      toast({ title: 'Sem imagens novas', description: 'Nada foi gerado desta vez.' });
+      return;
+    }
+
+    const idsCsv = created.map((c) => c.id).join(',');
+    const markdown = `**Iteração pronta.**\n\n<creative-gallery ids="${idsCsv}"/>`;
+
+    let appended = false;
+    if (appendAssistantMarkdown) {
+      try {
+        appended = await appendAssistantMarkdown(markdown);
+      } catch {
+        appended = false;
+      }
+    }
+
+    if (!appended) {
+      const injected = created.map(metaToInline);
+      setHiddenIds((prev) => new Set(prev).add(parentId));
+      setPrependedFromActions((prev) => [...injected, ...prev]);
+    }
+
+    toast({
+      title: 'Iterado',
+      description: appended
+        ? `${created.length} novo(s) abaixo no histórico do chat.`
+        : `${created.length} novo(s) na galeria.`,
+    });
+    setIteratingId(null);
+    setIterateInstruction('');
   };
 
   return (
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-3">
-        {creatives.map((c) => {
+        {mergedCreatives.map((c) => {
           const aspect = ASPECT_LABELS[c.format];
           const aspectClass = c.format === 'feed_1x1' ? 'aspect-square'
             : c.format === 'story_9x16' ? 'aspect-[9/16]'

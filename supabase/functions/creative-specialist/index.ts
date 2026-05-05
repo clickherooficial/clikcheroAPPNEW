@@ -64,7 +64,8 @@ Se ja tiver oferta clara (do briefing ou da pergunta), NAO ask, gere.
 
 - **generate_creative**: gera 1-4 imagens novas (precisa: concept, format, count)
 - **iterate_creative**: edita imagem existente (precisa: parent_creative_id, instruction)
-- **vary_creative**: 3 variacoes de criativo existente
+- **vary_creative**: 3 artes novas COM CONCEITO visual/mensagem bem diferente um do outro
+  (mesmo produto/oferta da empresa — nao repetir apenas pequenas mudanca de cor/crop).
 - **adapt_creative**: muda formato (ex: feed -> story)
 - **compare_creatives**: analisa 2+ criativos lado a lado
 - **search_knowledge**: busca depoimentos/ofertas do briefing do cliente
@@ -91,6 +92,9 @@ Se ja tiver oferta clara (do briefing ou da pergunta), NAO ask, gere.
 - Quando der erro (quota, briefing incompleto, timeout), retorne a mensagem de
   erro LITERAL — orchestrator vai polir
 - NUNCA invente nome de campanha/oferta — use search_knowledge se precisar
+- NAO use Black Friday / Cyber Monday como exemplo espontaneo de conceito ou copy
+  se o usuario nao pediu — prefira exemplos neutros SMB (servico local, produto,
+  temporada generica).
 
 Sempre em portugues brasileiro.`;
 

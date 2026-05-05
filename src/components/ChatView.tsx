@@ -46,6 +46,7 @@ const ChatView = () => {
     newConversation,
     loadConversation,
     loadProactiveInsights,
+    appendAssistantChatArtifact,
   } = useChat();
 
   const [input, setInput] = useState("");
@@ -182,7 +183,14 @@ const ChatView = () => {
         const idx = Number(galleryMatch[1]);
         const g = galleries[idx];
         if (g) {
-          elements.push(<ChatCreativeGallery key={`gal-${i}`} ids={g.ids} onSendSystemMessage={(text) => sendMessage(text)} />);
+          elements.push(
+            <ChatCreativeGallery
+              key={`gal-${i}`}
+              ids={g.ids}
+              onSendSystemMessage={(text) => sendMessage(text)}
+              appendAssistantMarkdown={appendAssistantChatArtifact}
+            />,
+          );
         }
         continue;
       }

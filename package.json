@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy:edge:chat-publish": "npx --yes supabase@latest functions deploy ai-chat campaign-publish --project-ref ckxewdahdiambbxmqxgb",
+    "deploy:edge:creative-ai": "npx --yes supabase@latest functions deploy creative-specialist creative-iterate ai-chat --project-ref ckxewdahdiambbxmqxgb"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

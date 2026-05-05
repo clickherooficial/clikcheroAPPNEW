@@ -1,8 +1,9 @@
 // Wizard de onboarding: 6 passos de briefing + passo 7 (Meta / Business Manager).
 // Spec: .kiro/specs/briefing-onboarding/ (task 6.1)
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -27,10 +28,13 @@ import {
 } from '@/lib/briefing-schemas';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from 'next-themes';
+import { WIZARD_STEP_STORAGE_KEY } from '@/lib/oauth-meta-return';
 
 const THEME_STORAGE_KEY = 'clickhero-theme';
 
 const WIZARD_TOTAL_STEPS = 7;
+
+type StepNum = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 /** Lê `?step=` (1–7); invalido/absente retorna null. */
 function parseWizardStepParam(search: string | null): StepNum | null {
@@ -40,7 +44,15 @@ function parseWizardStepParam(search: string | null): StepNum | null {
   return n as StepNum;
 }
 
-type StepNum = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+function readStoredWizardStep(): StepNum | null {
+  try {
+    const raw = Number.parseInt(sessionStorage.getItem(WIZARD_STEP_STORAGE_KEY) ?? '', 10);
+    if (Number.isInteger(raw) && raw >= 1 && raw <= WIZARD_TOTAL_STEPS) return raw as StepNum;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 const STEP_TITLES: Record<StepNum, string> = {
   1: 'Sobre seu negocio',
   2: 'Suas ofertas',
@@ -58,7 +70,7 @@ const STEP_HELPER: Record<StepNum, string> = {
   4: 'Como SUA MARCA fala nos anúncios: formal/casual, palavras que você usa, palavras que não quer ver',
   5: 'Suas cores e logo para manter a marca consistente nos seus materiais.',
   6: 'Palavras, assuntos ou imagens que NUNCA podem aparecer (compliance)',
-  7: 'Conecte a conta Meta do seu negocio para importar campanhas, páginas e contas de anúncio. Você pode ajustar depois em Integrações.',
+  7: 'Conecte a conta Meta do seu negocio para importar campanhas, páginas e contas de anúncio. Ao voltar depois da Meta, você permanece aqui — o briefing já preenchido continua salvo. Integrações ficam sempre disponíveis depois.',
 };
 
 export function BriefingWizard() {
@@ -69,11 +81,75 @@ export function BriefingWizard() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { setTheme } = useTheme();
-  const [step, setStep] = useState<StepNum>(() => parseWizardStepParam(searchParams.get('step')) ?? 1);
+  const queryClient = useQueryClient();
 
+  const [step, setStep] = useState<StepNum>(() => {
+    if (typeof window === 'undefined') return 1;
+    const qs = new URLSearchParams(window.location.search);
+    return parseWizardStepParam(qs.get('step')) ?? readStoredWizardStep() ?? 1;
+  });
+
+  const goToStep = useCallback(
+    (s: StepNum) => {
+      setStep(s);
+      try {
+        sessionStorage.setItem(WIZARD_STEP_STORAGE_KEY, String(s));
+      } catch {
+        /* ignore */
+      }
+      navigate(`/briefing/wizard?step=${String(s)}`, { replace: true });
+    },
+    [navigate],
+  );
+
+  // Meta OAuth na mesma aba: limpa query e dispara o mesmo fluxo do popup
+  useEffect(() => {
+    const oauthDone = searchParams.get('oauth_meta_done');
+    const oauthErr = searchParams.get('oauth_meta_error');
+    if (oauthDone !== '1' && oauthErr == null) return;
+
+    const next = new URLSearchParams(searchParams);
+    if (oauthDone === '1') {
+      queryClient.invalidateQueries({ queryKey: ['meta-integration'] });
+      queryClient.invalidateQueries({ queryKey: ['meta-assets'] });
+      const acct = parseInt(searchParams.get('oauth_accounts') ?? '0', 10) || 0;
+      window.dispatchEvent(
+        new CustomEvent('meta-oauth-completed', { detail: { accounts: acct } }),
+      );
+      toast({
+        title: 'Meta conectado!',
+        description: acct
+          ? `${acct} conta(s) encontrada(s). Escolha os ativos se desejar.`
+          : 'Conta ligada ao app.',
+      });
+      next.delete('oauth_meta_done');
+      next.delete('oauth_accounts');
+    }
+    if (oauthErr != null && oauthErr !== '') {
+      toast({
+        title: 'Erro na conexão Meta',
+        description: decodeURIComponent(oauthErr),
+        variant: 'destructive',
+      });
+      next.delete('oauth_meta_error');
+    }
+    if (!next.has('step')) {
+      next.set('step', String(readStoredWizardStep() ?? 7));
+    }
+
+    navigate(`/briefing/wizard?${next}`, { replace: true });
+  }, [searchParams, navigate, queryClient, toast]);
+
+  // URL ?step= (bookmark / retorno OAuth) mantém estado alinhado
   useEffect(() => {
     const s = parseWizardStepParam(searchParams.get('step'));
-    if (s != null) setStep(s);
+    if (s == null) return;
+    setStep((prev) => (prev !== s ? s : prev));
+    try {
+      sessionStorage.setItem(WIZARD_STEP_STORAGE_KEY, String(s));
+    } catch {
+      /* ignore */
+    }
   }, [searchParams]);
   const [busy, setBusy] = useState(false);
   const progress = useMemo(
@@ -163,7 +239,11 @@ export function BriefingWizard() {
       } else if (stepNum === 4) {
         const parsed = toneStepSchema.safeParse(partial);
         if (!parsed.success) {
-          toast({ title: 'Campos invalidos', variant: 'destructive' });
+          toast({
+            title: 'Tom de voz inválido',
+            description: parsed.error.issues[0]?.message ?? 'Revise os campos obrigatórios',
+            variant: 'destructive',
+          });
           return;
         }
       } else if (stepNum === 5) {
@@ -199,7 +279,7 @@ export function BriefingWizard() {
         toast({ title: 'Briefing salvo', description: 'Seu perfil de negocio foi atualizado.' });
         navigate('/');
       } else {
-        setStep(next);
+        goToStep(next);
       }
     } finally {
       setBusy(false);
@@ -250,14 +330,14 @@ export function BriefingWizard() {
               />
             )}
             {step === 2 && (
-              <StepOffers disabled={busy || isReadOnly} onContinue={() => setStep(3)} onBack={() => setStep(1)} />
+              <StepOffers disabled={busy || isReadOnly} onContinue={() => goToStep(3)} onBack={() => goToStep(1)} />
             )}
             {step === 3 && (
               <StepAudience
                 initial={briefing?.audience ?? {}}
                 disabled={busy || isReadOnly}
                 onSubmit={(audience) => handleSaveStep(3, { audience }, 4)}
-                onBack={() => setStep(2)}
+                onBack={() => goToStep(2)}
               />
             )}
             {step === 4 && (
@@ -265,7 +345,7 @@ export function BriefingWizard() {
                 initial={briefing?.tone ?? {}}
                 disabled={busy || isReadOnly}
                 onSubmit={(tone) => handleSaveStep(4, { tone }, 5)}
-                onBack={() => setStep(3)}
+                onBack={() => goToStep(3)}
               />
             )}
             {step === 5 && (
@@ -273,21 +353,21 @@ export function BriefingWizard() {
                 initial={briefing?.palette ?? {}}
                 disabled={busy || isReadOnly}
                 onSubmit={(palette) => handleSaveStep(5, { palette }, 6)}
-                onBack={() => setStep(4)}
+                onBack={() => goToStep(4)}
               />
             )}
             {step === 6 && (
               <StepProhibitions
                 niche={briefing?.niche ?? null}
                 disabled={busy || isReadOnly}
-                onComplete={() => setStep(7)}
-                onBack={() => setStep(5)}
+                onComplete={() => goToStep(7)}
+                onBack={() => goToStep(5)}
               />
             )}
             {step === 7 && (
               <StepMetaConnect
                 disabled={busy || isReadOnly}
-                onBack={() => setStep(6)}
+                onBack={() => goToStep(6)}
                 onFinish={() => {
                   try {
                     localStorage.removeItem('briefing:skipped-at');

@@ -257,7 +257,7 @@ export const CHAT_TOOLS = [
         properties: {
           query: {
             type: 'string',
-            description: 'Pergunta em linguagem natural. Ex: "depoimentos sobre o produto X", "preco da oferta de Black Friday", "briefing inicial".',
+            description: 'Pergunta em linguagem natural. Ex: "depoimentos sobre o produto X", "valor da segunda via do curso conforme prospecto PDF", "briefing inicial".',
           },
           top_k: {
             type: 'number',
@@ -300,7 +300,7 @@ export const CHAT_TOOLS = [
         properties: {
           question: {
             type: 'string',
-            description: 'Pergunta especifica e focada para o specialist responder. Ex: "Por que a campanha Black Friday tem CPA 40% acima da media?"',
+            description: 'Pergunta especifica e focada para o specialist responder. Ex: "Por que a campanha de lancamento de marco gastou tanto com pouco retorno?"',
           },
           context: {
             type: 'string',
@@ -322,7 +322,7 @@ export const CHAT_TOOLS = [
         properties: {
           question: {
             type: 'string',
-            description: 'Pedido do user, parafraseado claro pro specialist. Ex: "user pediu pra pausar a campanha Black Friday" ou "plano: pausa A, ajusta budget de B pra R$50".',
+            description: 'Pedido do user, parafraseado claro pro specialist. Ex: "user pediu pra pausar a campanha Weekend Delivery" ou "plano: pausa A, ajusta budget de B pra R$50".',
           },
           context: {
             type: 'string',
@@ -366,7 +366,7 @@ export const CHAT_TOOLS = [
         properties: {
           question: {
             type: 'string',
-            description: 'Pedido do user, parafraseado pra ser claro pro specialist. Ex: "criar 2 anuncios story pra promocao Black Friday da pizzaria, R$30 todas terca-feira" ou "user disse so cria um criativo, conduza fluxo consultivo pra coletar oferta+formato+count".',
+            description: 'Pedido do user, parafraseado pra ser claro pro specialist. Ex: "criar 2 anuncios story pra pizzaria promo de terca R$29, todas as quartas-feiras" ou "user disse so cria um criativo, conduza fluxo consultivo pra coletar oferta+formato+count".',
           },
           context: {
             type: 'string',
@@ -490,13 +490,13 @@ export const CHAT_TOOLS = [
     function: {
       name: 'generate_creative',
       description:
-        'Gera NOVAS imagens de anuncio via IA (Nano Banana 2 ou GPT-image-1) usando o briefing do cliente. Use APENAS quando o usuario pedir explicitamente para "gerar/criar/fazer um anuncio/imagem/criativo" (ex: "cria um criativo pra Black Friday", "gera 2 imagens da oferta X em formato story"). NAO use para: analise de criativos existentes, perguntas sobre performance, ou recomendacoes de copy. Apos gerar, NAO descreva cada imagem em texto — o usuario ja vera a galeria inline.',
+        'Gera NOVAS imagens de anuncio via IA (Nano Banana 2 ou GPT-image-1) usando o briefing do cliente. Use APENAS quando o usuario pedir explicitamente para "gerar/criar/fazer um anuncio/imagem/criativo" (ex: "cria uma arte pra promo de aniversario da loja", "gera 2 imagens da oferta X em formato story"). NAO use para: analise de criativos existentes, perguntas sobre performance, ou recomendacoes de copy. Apos gerar, NAO descreva cada imagem em texto — o usuario ja vera a galeria inline.',
       parameters: {
         type: 'object',
         properties: {
           concept: {
             type: 'string',
-            description: 'Descricao curta do que a imagem deve mostrar. Ex: "homem de terno cinza segurando smartphone num escritorio moderno, oferta de Black Friday em destaque".',
+            description: 'Descricao curta do que a imagem deve mostrar. Ex: "mulher sorrindo com produto handmade em mesa rustica destaque pra frete gratis e logo discreto".',
           },
           format: {
             type: 'string',
@@ -564,7 +564,7 @@ export const CHAT_TOOLS = [
     function: {
       name: 'vary_creative',
       description:
-        'Gera 3 variacoes naturais de um criativo existente sem mudar o conceito. Atalho de iterate_creative com mode=vary, count=3. Use quando o usuario pedir "faz mais 3 variacoes desse", "quero outras opcoes desse mesmo criativo", "varia esse aqui".',
+        'Gera 3 versoes NOVAS do anuncio com CONCEITOS e composicao BEM DIFERENTES (nao e so filtro pequeno na mesma ideia). Mantem o mesmo produto/servico/marca. Atalho tecnico: iterate_creative com mode=vary, count=3. Use quando pedirem "varia", "outras versoes bem diferentes", "muda o conceito inteiro".',
       parameters: {
         type: 'object',
         properties: {
@@ -801,16 +801,36 @@ export const CHAT_TOOLS = [
             type: 'number',
             description: 'Override do orcamento diario em BRL (minimo 10). Default = 10.',
           },
+          local_geo_hint: {
+            type: 'string',
+            description:
+              'Quando o usuario disse em qual cidade/regiao quer aparecer (negocio local), passe em portugues livre, ex: "Curitiba PR", "Zona Sul SP". O servidor resolve o ID Meta automaticamente. Nao invente se ele nao mencionou cidade.',
+          },
           audience_overrides: {
             type: 'object',
-            description: 'Override do publico-alvo. v1: so age_min/age_max + countries.',
+            description:
+              'Override do publico-alvo (idade, paises ISO2 e/ou cities com keys Meta quando voce ja tiver). Em geral deixe cidades pra `local_geo_hint` ou briefing + arquetipo local — o servidor preenche `cities[].key`.',
             properties: {
               age_min: { type: 'number' },
               age_max: { type: 'number' },
               geo_locations: {
                 type: 'object',
                 properties: {
-                  countries: { type: 'array', items: { type: 'string' } },
+                  countries: { type: 'array', items: { type: 'string' }, description: 'Codigos ISO2, ex.: ["BR"]' },
+                  cities: {
+                    type: 'array',
+                    description:
+                      'Opcional expert: cidades Meta com key numerica oficial. Preferir local_geo_hint pro usuario leigo.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        key: { type: 'string', description: 'Key da cidade no Meta (Targeting Search)' },
+                        radius: { type: 'number', description: 'Raio opcional na unidade distance_unit' },
+                        distance_unit: { type: 'string', enum: ['kilometer', 'mile'] },
+                      },
+                      required: ['key'],
+                    },
+                  },
                 },
               },
             },

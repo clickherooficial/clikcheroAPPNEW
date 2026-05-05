@@ -88,6 +88,8 @@ export interface CampaignProposalPayload {
   start_time?: string;
   stop_time?: string;
   audience: AudiencePayload;
+  /** Só UI: resumo quando targeting resolveu cidade/regiao via Meta Search */
+  audience_geo_summary?: string;
   optimization_goal: MetaOptimizationGoal;
   copy: CopyPayload;
   link_url: string;
@@ -400,13 +402,21 @@ export async function resolveDefaults(
     overrides.daily_budget_brl ?? MIN_DAILY_BUDGET_BRL,
   );
 
-  // Audience v1 simples (D5 do design): so age + countries=BR.
-  // Cidades e interests ficam pro Fase 2 com Targeting Search API.
+  // Audience: idade + paises BR default; merges parciais de geo no override.
+  // Cidades com key Meta podem vir de overrides ou de propose_campaign (Targeting Search).
   const briefingAge = (briefing?.audience as { ageRange?: { min?: number; max?: number } } | null)?.ageRange;
+  const ovGeo = overrides.audience?.geo_locations;
+  const geo_locations: AudiencePayload['geo_locations'] = ovGeo != null
+    ? {
+      countries: ovGeo.countries?.length ? ovGeo.countries : ['BR'],
+      ...(ovGeo.cities?.length ? { cities: ovGeo.cities } : {}),
+    }
+    : { countries: ['BR'] };
+
   const audience: AudiencePayload = {
     age_min: clampAge(overrides.audience?.age_min ?? briefingAge?.min ?? 18),
     age_max: clampAge(overrides.audience?.age_max ?? briefingAge?.max ?? 65),
-    geo_locations: overrides.audience?.geo_locations ?? { countries: ['BR'] },
+    geo_locations,
     interests: overrides.audience?.interests ?? [],
   };
   // Garante max >= min
@@ -630,7 +640,7 @@ export function mapProposalToCampaignBody(
   // Driving traffic + LANDING_PAGE_VIEWS optimization e o caminho seguro pra leigo.
   // Quando user tem pixel ativo + pixel events trackados, propose_campaign pode passar
   // copy_overrides com objective=OUTCOME_SALES + promoted_object explicito (futuro).
-  const objectiveCodeMap: Record<CampaignObjective, CampaignPublishBody['campaign']['objective']> = {
+  const objectiveCodeMap: Record<CampaignObjective, CampaignPublishBody['campaign_data']['objective']> = {
     SALES: 'OUTCOME_TRAFFIC',
     LEADS: 'OUTCOME_LEADS',
     AWARENESS: 'OUTCOME_AWARENESS',
@@ -642,7 +652,7 @@ export function mapProposalToCampaignBody(
   const daily_budget_centavos = Math.round(payload.daily_budget_brl * 100);
 
   // Billing event: LINK_CLICKS so faz sentido com optimization LINK_CLICKS
-  const billing_event: CampaignPublishBody['adset']['billing_event'] =
+  const billing_event: CampaignPublishBody['adset_data']['billing_event'] =
     payload.optimization_goal === 'LINK_CLICKS' ? 'LINK_CLICKS' : 'IMPRESSIONS';
 
   return {

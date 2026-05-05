@@ -20,6 +20,8 @@ import {
   type Archetype,
 } from './campaign-proposal-helpers.ts';
 import { runComplianceCheck, type ComplianceCheckResult } from './compliance-runner.ts';
+import { resolveMetaContextByCompanyId } from './meta-edits-helpers.ts';
+import { enrichAudienceWithLocalGeo, type BriefingAudienceShape } from './meta-geo-resolve.ts';
 
 // ============================================================
 // Validacao Zod do input (task 4.2)
@@ -49,6 +51,8 @@ const InputSchema = z.object({
   }).optional(),
   page_id: z.string().optional(), // page_id OU nome parcial (resolve no handler)
   account_id: z.string().optional(), // ad account id OU nome parcial (resolve no handler)
+  /** Texto livre (ex.: "Curitiba PR") — servidor resolve key Meta quando fizer sentido */
+  local_geo_hint: z.string().max(120).trim().optional(),
 });
 
 export type ProposeCampaignInput = z.infer<typeof InputSchema>;
@@ -172,7 +176,28 @@ export async function handleProposeCampaign(
     }
     return `Erro ao resolver defaults: ${defaultsRes.error_kind}.`;
   }
-  const defaults = defaultsRes.defaults;
+  let defaults = defaultsRes.defaults;
+  let audience_geo_summary: string | undefined;
+
+  // 4.1) Resolve cidade/regiao Meta quando negocio local ou hint explicito (Targeting Search API)
+  const { data: briefingAudienceRow } = await supabase
+    .from('company_briefings')
+    .select('audience')
+    .eq('company_id', companyId)
+    .maybeSingle();
+
+  const metaResolve = await resolveMetaContextByCompanyId(supabase, companyId);
+  if (metaResolve.ok) {
+    const enriched = await enrichAudienceWithLocalGeo({
+      audience: defaults.audience,
+      archetype,
+      briefingAudience: (briefingAudienceRow?.audience as BriefingAudienceShape | null | undefined) ?? undefined,
+      metaToken: metaResolve.value.metaToken,
+      conversationCityHint: input.local_geo_hint ?? null,
+    });
+    defaults = { ...defaults, audience: enriched.audience };
+    audience_geo_summary = enriched.geoSummary;
+  }
 
   // 5) Coleta ultimas mensagens da conversa pra passar como contexto pro generateCopy
   // (resolve bug: briefing pode ser de outro negocio mas user conversou sobre oferta diferente)
@@ -227,6 +252,7 @@ export async function handleProposeCampaign(
     campaign_name: defaults.campaign_name,
     daily_budget_brl: defaults.daily_budget_brl,
     audience: defaults.audience,
+    ...(audience_geo_summary ? { audience_geo_summary } : {}),
     optimization_goal: defaults.optimization_goal,
     copy,
     link_url: defaults.link_url,
@@ -306,13 +332,21 @@ function formatProposalSummary(
   p: CampaignProposalPayload,
   c: ComplianceCheckResult,
 ): string {
+  const geoSummary = p.audience_geo_summary?.trim();
+  const geoCountries = p.audience.geo_locations.countries ?? [];
+  const geoCities = p.audience.geo_locations.cities ?? [];
+  let geoSuffix = '';
+  if (geoSummary) geoSuffix = `, ${geoSummary}`;
+  else if (geoCities.length > 0) geoSuffix = ', area local (cidade/regiao)';
+  else if (geoCountries.length > 0) geoSuffix = ', Brasil';
+
   const lines: string[] = [];
   lines.push(`Montei sua proposta de anuncio. Da uma olhada e me diz se pode publicar.`);
   lines.push('');
   lines.push(`**${p.campaign_name}**`);
   lines.push(`- Objetivo: ${objectiveLeigo(p.objective)}`);
   lines.push(`- Investimento: R$ ${p.daily_budget_brl.toFixed(2).replace('.', ',')} por dia`);
-  lines.push(`- Publico: ${p.audience.age_min}-${p.audience.age_max} anos${(p.audience.geo_locations.countries ?? []).length > 0 ? ', Brasil' : ''}`);
+  lines.push(`- Publico: ${p.audience.age_min}-${p.audience.age_max} anos${geoSuffix}`);
   lines.push(`- Compliance: ${complianceBadgeLeigo(c.severity)}`);
   lines.push('');
   lines.push(`<campaign-proposal id="${proposalId}"/>`);

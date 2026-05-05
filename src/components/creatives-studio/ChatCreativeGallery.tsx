@@ -22,9 +22,15 @@ interface InlineCreative {
 interface ChatCreativeGalleryProps {
   ids: string[];
   onSendSystemMessage?: (text: string) => void;
+  /** Persiste novo bubble assistant com tag de galeria (Vari/Iter pela UI — item 9). */
+  appendAssistantMarkdown?: (markdown: string) => Promise<boolean>;
 }
 
-export function ChatCreativeGallery({ ids, onSendSystemMessage }: ChatCreativeGalleryProps) {
+export function ChatCreativeGallery({
+  ids,
+  onSendSystemMessage,
+  appendAssistantMarkdown,
+}: ChatCreativeGalleryProps) {
   const [items, setItems] = useState<InlineCreative[] | null>(null);
   const [missingIds, setMissingIds] = useState<string[]>([]);
 
@@ -90,7 +96,13 @@ export function ChatCreativeGallery({ ids, onSendSystemMessage }: ChatCreativeGa
 
   return (
     <>
-      {items.length > 0 && <CreativeGalleryInline creatives={items} onSendSystemMessage={onSendSystemMessage} />}
+      {items.length > 0 && (
+        <CreativeGalleryInline
+          creatives={items}
+          onSendSystemMessage={onSendSystemMessage}
+          appendAssistantMarkdown={appendAssistantMarkdown}
+        />
+      )}
       {missingIds.length > 0 && (
         <div className="flex flex-wrap gap-1 my-2">
           {missingIds.map((id) => (

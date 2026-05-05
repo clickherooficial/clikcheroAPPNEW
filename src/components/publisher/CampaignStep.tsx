@@ -49,7 +49,7 @@ export function CampaignStep({ data, onChange, adAccounts, adAccountId, onAdAcco
 
       <div className="space-y-1.5">
         <Label>Nome da Campanha *</Label>
-        <Input value={data.name} onChange={(e) => set('name', e.target.value)} maxLength={250} placeholder="Ex: Campanha Black Friday 2026" />
+        <Input value={data.name} onChange={(e) => set('name', e.target.value)} maxLength={250} placeholder="Ex: Campanha lancamento verão" />
         <p className="text-xs text-muted-foreground">{data.name.length}/250</p>
       </div>
 

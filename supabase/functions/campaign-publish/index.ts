@@ -471,8 +471,25 @@ Deno.serve(async (req) => {
     // Setamos advantage_audience=0 (desabilitado) pra honrar o targeting
     // demografico explicito que o agente monta. Quem quiser expansao automatica
     // do publico futuramente pode mudar pra 1 via override.
+    // Meta rejeita geo_locations com countries E cities juntos (subcode "Há sobreposição
+    // de algumas de suas localizações"). Quando há cities/regions/zips definidos,
+    // dropamos countries — a localização granular ja implica o pais.
+    const targetingRaw = adsetData.targeting as Record<string, unknown>;
+    const geoLocsRaw = (targetingRaw.geo_locations ?? {}) as {
+      countries?: string[];
+      cities?: unknown[];
+      regions?: unknown[];
+      zips?: unknown[];
+    };
+    const hasGranular =
+      (geoLocsRaw.cities?.length ?? 0) > 0 ||
+      (geoLocsRaw.regions?.length ?? 0) > 0 ||
+      (geoLocsRaw.zips?.length ?? 0) > 0;
+    const sanitizedGeo: Record<string, unknown> = { ...geoLocsRaw };
+    if (hasGranular) delete sanitizedGeo.countries;
     const targetingWithAutomation = {
-      ...(adsetData.targeting as Record<string, unknown>),
+      ...targetingRaw,
+      geo_locations: sanitizedGeo,
       targeting_automation: { advantage_audience: 0 },
     };
 

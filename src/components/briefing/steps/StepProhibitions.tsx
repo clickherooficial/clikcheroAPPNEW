@@ -1,6 +1,6 @@
 // Passo 6 — Proibicoes. Spec: briefing-onboarding (task 6.7)
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import {
   useBriefingProhibitions,
   suggestVertical,
 } from '@/hooks/use-briefing-prohibitions';
-import { TagInput } from '@/components/briefing/TagInput';
+import { TagInput, type TagInputHandle } from '@/components/briefing/TagInput';
 import type { ProhibitionCategory } from '@/types/briefing';
 
 interface Props {
@@ -140,12 +140,16 @@ function ProhibitionCategorySection({
   disabled?: boolean;
 }) {
   const [draftValues, setDraftValues] = useState<string[]>([]);
+  const tagRef = useRef<TagInputHandle>(null);
 
   const flush = () => {
-    if (draftValues.length > 0) {
-      onAdd(draftValues);
-      setDraftValues([]);
-    }
+    // Commit any pending text in the input first (e.g., user typed but didn't press Enter)
+    tagRef.current?.commit();
+    // Functional setter sees the latest queued state, including the commit above
+    setDraftValues((current) => {
+      if (current.length > 0) onAdd(current);
+      return [];
+    });
   };
 
   return (
@@ -175,9 +179,9 @@ function ProhibitionCategorySection({
       )}
       <div className="flex gap-2 items-end">
         <div className="flex-1">
-          <TagInput value={draftValues} onChange={setDraftValues} placeholder="Pressione enter para adicionar" disabled={disabled} max={20} />
+          <TagInput ref={tagRef} value={draftValues} onChange={setDraftValues} placeholder="Pressione enter ou clique em Adicionar" disabled={disabled} max={20} />
         </div>
-        <Button size="sm" variant="outline" onClick={flush} disabled={disabled || draftValues.length === 0}>
+        <Button size="sm" variant="outline" onClick={flush} disabled={disabled}>
           Adicionar
         </Button>
       </div>

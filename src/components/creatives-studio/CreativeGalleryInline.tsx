@@ -395,7 +395,7 @@ export function CreativeGalleryInline({
                     <Button size="sm" variant="outline" className="h-7 text-[11px]"
                             onClick={() => setIteratingId(c.id)}
                             disabled={isReadOnly || isBusy}>
-                      <Sparkles className="h-3 w-3 mr-1" /> Iterar
+                      <Sparkles className="h-3 w-3 mr-1" /> Alterar
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-[11px]"
                             onClick={() => handleVary(c.id)}

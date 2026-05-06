@@ -5,6 +5,17 @@
 
 ---
 
+## Proposta — edição de localidade no editor (2026-05-06)
+
+> Spec: `.kiro/specs/proposal-edit-geo/`. Permite que o usuário edite a localidade do targeting da proposta direto no `CampaignProposalEditor`.
+
+- **Edge Function nova `meta-geo-search`:** POST com tenant guard; resolve "Cidade" / "Cidade, UF" via `searchMetaAdGeoCity` reutilizando o helper `_shared/meta-geo-resolve.ts`. Retorna `{ key, name, summary, radius_km }` ou erro estruturado (`not_found` | `no_meta_connection` | `meta_api` | `validation`).
+- **`src/hooks/use-meta-geo-search.ts`:** wrapper `useMutation` com `mapEdgeError`; expõe `resolveCity(query)` e `isResolving`.
+- **`src/components/chat/CampaignProposalEditor.tsx`:** input "Localidade" pré-preenchido com `audience_geo_summary`; on Save, se mudou, resolve via Meta antes do patch; toast destrutivo se `not_found` (sugere "Cidade, UF"). Patch atualiza `audience.geo_locations.cities` (radius 25 km) + `audience_geo_summary`.
+- **Deploy pendente:** `meta-geo-search` precisa ser deployado em produção para o fluxo funcionar.
+
+---
+
 ## Chat — item 11: público local (Targeting Search Meta) na proposta (2026-05-05)
 
 - **`supabase/functions/_shared/meta-geo-resolve.ts`:** Targeting Search `type=adgeolocation` → `searchMetaAdGeoCity`, `enrichAudienceWithLocalGeo` (prioridade `local_geo_hint` na tool; briefing cidade + arquetipo `small_local_business`).

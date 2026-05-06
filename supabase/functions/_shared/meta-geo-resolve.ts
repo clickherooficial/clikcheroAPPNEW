@@ -138,15 +138,11 @@ export async function enrichAudienceWithLocalGeo(options: {
   const match = await searchMetaAdGeoCity(metaToken, searchQuery, countryCode);
   if (!match) return { audience };
 
-  const countries = audience.geo_locations?.countries?.length
-    ? audience.geo_locations.countries
-    : ['BR'];
-
+  // Meta rejeita countries + cities juntos no mesmo geo_locations (sobreposicao).
+  // Como estamos pinning city, omitimos countries.
   const next: AudiencePayload = {
     ...audience,
     geo_locations: {
-      ...audience.geo_locations,
-      countries,
       cities: [{ key: match.key, radius: DEFAULT_RADIUS_KM, distance_unit: 'kilometer' }],
     },
   };

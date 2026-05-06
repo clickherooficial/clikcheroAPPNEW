@@ -292,7 +292,7 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
             </div>
 
             <div className="space-y-2 pt-3 border-t border-border">
-              <Label>Iterar com instrucao</Label>
+              <Label>Alterar com instrucao</Label>
               <Textarea
                 value={iterateInstruction}
                 onChange={(e) => setIterateInstruction(e.target.value)}
@@ -302,7 +302,7 @@ export function CreativeDetailDialog({ creative, open, onOpenChange }: CreativeD
               />
               <Button size="sm" onClick={handleIterate} disabled={busy !== null || !iterateInstruction.trim()}>
                 {busy === 'iterate' ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                Iterar
+                Alterar
               </Button>
             </div>
           </>

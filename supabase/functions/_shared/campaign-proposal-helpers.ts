@@ -404,14 +404,15 @@ export async function resolveDefaults(
 
   // Audience: idade + paises BR default; merges parciais de geo no override.
   // Cidades com key Meta podem vir de overrides ou de propose_campaign (Targeting Search).
+  // IMPORTANTE: Meta rejeita countries + cities no mesmo geo_locations (sobreposicao).
+  // Se ha cities, omitimos countries; senao usamos countries (default BR).
   const briefingAge = (briefing?.audience as { ageRange?: { min?: number; max?: number } } | null)?.ageRange;
   const ovGeo = overrides.audience?.geo_locations;
-  const geo_locations: AudiencePayload['geo_locations'] = ovGeo != null
-    ? {
-      countries: ovGeo.countries?.length ? ovGeo.countries : ['BR'],
-      ...(ovGeo.cities?.length ? { cities: ovGeo.cities } : {}),
-    }
-    : { countries: ['BR'] };
+  const geo_locations: AudiencePayload['geo_locations'] = ovGeo?.cities?.length
+    ? { cities: ovGeo.cities }
+    : ovGeo?.countries?.length
+      ? { countries: ovGeo.countries }
+      : { countries: ['BR'] };
 
   const audience: AudiencePayload = {
     age_min: clampAge(overrides.audience?.age_min ?? briefingAge?.min ?? 18),

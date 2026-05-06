@@ -1,6 +1,6 @@
 // Input multi-tag reutilizado pelos passos. Spec: briefing-onboarding
 
-import { useState, type KeyboardEvent } from 'react';
+import { forwardRef, useImperativeHandle, useState, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
@@ -13,7 +13,15 @@ interface TagInputProps {
   max?: number;
 }
 
-export function TagInput({ value, onChange, placeholder, disabled, max = 50 }: TagInputProps) {
+export interface TagInputHandle {
+  /** Commits any pending text in the input as a tag. Safe to call from parent before flushing. */
+  commit: () => void;
+}
+
+export const TagInput = forwardRef<TagInputHandle, TagInputProps>(function TagInput(
+  { value, onChange, placeholder, disabled, max = 50 },
+  ref,
+) {
   const [draft, setDraft] = useState('');
 
   const add = () => {
@@ -27,6 +35,8 @@ export function TagInput({ value, onChange, placeholder, disabled, max = 50 }: T
     onChange([...value, v]);
     setDraft('');
   };
+
+  useImperativeHandle(ref, () => ({ commit: add }), [draft, value, max]);
 
   const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -69,4 +79,4 @@ export function TagInput({ value, onChange, placeholder, disabled, max = 50 }: T
       <p className="text-xs text-muted-foreground">{value.length}/{max}</p>
     </div>
   );
-}
+});

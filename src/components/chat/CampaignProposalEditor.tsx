@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useMetaGeoSearch } from '@/hooks/use-meta-geo-search';
 import type { CampaignProposalPayload, MetaCtaEnum } from '@/types/campaign-proposal';
 
 const CTA_OPTIONS: Array<{ value: MetaCtaEnum; label: string }> = [
@@ -30,10 +32,21 @@ interface Props {
   isSaving: boolean;
 }
 
+function deriveInitialLocation(p: CampaignProposalPayload): string {
+  const summary = p.audience_geo_summary?.trim();
+  if (summary) return summary;
+  const cities = p.audience.geo_locations.cities ?? [];
+  if (cities.length > 0) return ''; // Tem city key mas sem label legivel — usuario pode digitar pra atualizar
+  return '';
+}
+
 export function CampaignProposalEditor({ open, onOpenChange, initial, onSave, isSaving }: Props) {
+  const { toast } = useToast();
+  const { resolveCity, isResolving } = useMetaGeoSearch();
   const [budget, setBudget] = useState<string>(String(initial.daily_budget_brl));
   const [ageMin, setAgeMin] = useState<string>(String(initial.audience.age_min));
   const [ageMax, setAgeMax] = useState<string>(String(initial.audience.age_max));
+  const [location, setLocation] = useState<string>(deriveInitialLocation(initial));
   const [headline, setHeadline] = useState(initial.copy.headline);
   const [body, setBody] = useState(initial.copy.body);
   const [description, setDescription] = useState(initial.copy.description ?? '');
@@ -66,6 +79,29 @@ export function CampaignProposalEditor({ open, onOpenChange, initial, onSave, is
         cta,
       },
     };
+
+    const initialLocation = deriveInitialLocation(initial).trim();
+    const locationTrimmed = location.trim();
+    if (locationTrimmed && locationTrimmed !== initialLocation) {
+      const r = await resolveCity(locationTrimmed);
+      if (!r.ok) {
+        const desc = r.error.kind === 'not_found'
+          ? `${r.error.message} Tente "Cidade, UF".`
+          : r.error.message;
+        toast({ title: 'Localidade nao resolvida', description: desc, variant: 'destructive' });
+        return;
+      }
+      // Meta rejeita countries + cities juntos no geo_locations (sobreposição).
+      // Quando setamos cities, omitimos countries.
+      patch.audience = {
+        ...patch.audience!,
+        geo_locations: {
+          cities: [{ key: r.value.key, radius: r.value.radius_km, distance_unit: 'kilometer' }],
+        },
+      };
+      patch.audience_geo_summary = r.value.summary;
+    }
+
     await onSave(patch);
     onOpenChange(false);
   };
@@ -115,6 +151,21 @@ export function CampaignProposalEditor({ open, onOpenChange, initial, onSave, is
             </div>
           </div>
           {ageInvalid && <p className="text-xs text-destructive -mt-2">Idade entre 13 e 65 (máx ≥ mín)</p>}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="location" className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" /> Localidade
+            </Label>
+            <Input
+              id="location"
+              placeholder="Ex: Belo Horizonte, MG (deixe vazio para manter)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Resolvemos no Meta ao salvar (raio padrão 25 km). Vazio mantém a localidade atual.
+            </p>
+          </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="headline">
@@ -167,12 +218,12 @@ export function CampaignProposalEditor({ open, onOpenChange, initial, onSave, is
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving || isResolving}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={!canSave || isSaving}>
-            {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Salvar
+          <Button onClick={handleSave} disabled={!canSave || isSaving || isResolving}>
+            {(isSaving || isResolving) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isResolving ? 'Resolvendo localidade…' : 'Salvar'}
           </Button>
         </DialogFooter>
       </DialogContent>

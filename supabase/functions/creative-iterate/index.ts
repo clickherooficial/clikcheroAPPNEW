@@ -37,7 +37,7 @@ import {
 } from '../_shared/creative-compliance.ts';
 
 // Mesma logica do creative-generate: margem antes do corte da plataforma.
-const TOTAL_TIMEOUT_MS = 55_000;
+const TOTAL_TIMEOUT_MS = 85_000;
 const HASH_BLOCK_DISTANCE = 3;
 const HASH_NEAR_DISTANCE = 8;
 const DEDUPE_WINDOW_DAYS = 30;
